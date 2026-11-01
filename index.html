@@ -385,13 +385,6 @@ function buildKontext() {
             margin: 5px 0;
             color: #4CAF50;
         }
-        .checkbox-group {
-            margin: 5px 0;
-        }
-        .checkbox-group label {
-            display: inline;
-            margin-right: 10px;
-        }
     </style>
 </head>
 <body>
@@ -475,34 +468,6 @@ function buildKontext() {
                 <label><input type="checkbox" id="balkonHof"> Hoffassade</label>
             </div>
         </div>
-        
-        <div class="section">
-            <h4>Nutzungszonen (m²)</h4>
-            <label>Wohnbereich: 
-                <input type="range" id="wohnbereich" min="20" max="100" value="60" step="5">
-                <span class="slider-value" id="wohnbereichValue">60</span>
-            </label>
-            
-            <label>Private Bereiche: 
-                <input type="range" id="privatbereich" min="10" max="50" value="25" step="5">
-                <span class="slider-value" id="privatbereichValue">25</span>
-            </label>
-            
-            <label>Gemeinschaftsbereiche: 
-                <input type="range" id="gemeinschaft" min="10" max="40" value="20" step="5">
-                <span class="slider-value" id="gemeinschaftValue">20</span>
-            </label>
-            
-            <label>Nebenräume: 
-                <input type="range" id="nebenraeume" min="5" max="30" value="15" step="5">
-                <span class="slider-value" id="nebenraeumeValue">15</span>
-            </label>
-            
-            <label>Max. Verkehrsfläche (%): 
-                <input type="range" id="verkehrsflaeche" min="10" max="30" value="20" step="5">
-                <span class="slider-value" id="verkehrsflaecheValue">20</span>
-            </label>
-        </div>
     </div>
     
     <div id="stats">
@@ -515,20 +480,19 @@ function buildKontext() {
         <button onclick="exportGLTF()">Export glTF</button>
     </div>
 
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-        }
-    }
-    </script>
+    <!-- Korrekte CDN-Links für three.js r128 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/OBJExporter.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-        import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
+    <script>
+        // Prüfe ob three.js geladen wurde
+        if (typeof THREE === 'undefined') {
+            console.error('Three.js konnte nicht geladen werden!');
+        } else {
+            console.log('Three.js Version:', THREE.REVISION);
+        }
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -543,7 +507,7 @@ function buildKontext() {
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
         
-        const controls = new OrbitControls(camera, renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.25;
         
@@ -589,12 +553,7 @@ function buildKontext() {
             balkonbreite: 2.5,
             balkontiefe: 1.5,
             balkonStrasse: true,
-            balkonHof: false,
-            wohnbereich: 60,
-            privatbereich: 25,
-            gemeinschaft: 20,
-            nebenraeume: 15,
-            verkehrsflaeche: 20
+            balkonHof: false
         };
         
         // Material-spezifische Parameter
@@ -627,19 +586,6 @@ function buildKontext() {
                 co2: 400
             }
         };
-        
-        // Sonnenstunden-Analyse (vereinfacht)
-        function calculateSunHours(x, z, breite, tiefe) {
-            // Vereinfachte Berechnung: mehr Sonne an Südseite (positive Z)
-            const normalizedZ = (z + tiefe/2) / tiefe;
-            const normalizedX = (x + breite/2) / breite;
-            
-            // Grundwert basierend auf Position
-            let sunHours = 4 + normalizedZ * 4; // 4-8 Stunden
-            sunHours += Math.sin(normalizedX * Math.PI) * 1.5; // Randbereiche etwas weniger
-            
-            return Math.max(2, Math.min(10, sunHours));
-        }
         
         // Funktion zum Erstellen des Gebäudes
         function buildKonfigurator() {
@@ -687,10 +633,6 @@ function buildKontext() {
             const balkonMaterial = new THREE.MeshStandardMaterial({ 
                 color: 0xA0522D, 
                 roughness: 0.6 
-            });
-            const wandMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0xCCCCCC, 
-                roughness: 0.8 
             });
             
             // Positionierung
@@ -948,9 +890,6 @@ function buildKontext() {
             rechteWand.position.set(offsetX + effektiveBreite + 0.1, effektiveHoehe / 2, offsetZ + effektiveTiefe / 2);
             konfiguratorGruppe.add(rechteWand);
             
-            // Nutzungszonen generieren (vereinfachte Darstellung)
-            generateZones(offsetX, offsetZ, effektiveBreite, effektiveTiefe, anzahlGeschosse, geschosshoehe, rasterweite);
-            
             // Envelope (Drahtgitter)
             const envelopeMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
             const envelopeGeometry = new THREE.BufferGeometry();
@@ -972,100 +911,6 @@ function buildKontext() {
             updateStats(effektiveBreite, effektiveTiefe, effektiveHoehe, anzahlGeschosse, rasterweite);
         }
         
-        // Funktion zur Generierung der Nutzungszonen
-        function generateZones(offsetX, offsetZ, breite, tiefe, geschosse, geschosshoehe, rasterweite) {
-            // Berechne verfügbare Fläche pro Geschoss
-            const geschossflaeche = breite * tiefe;
-            
-            // Berechne Flächenverteilung
-            const verkehrsflaeche = geschossflaeche * (params.verkehrsflaeche / 100);
-            const nutzflaeche = geschossflaeche - verkehrsflaeche;
-            
-            // Verteilung der Nutzungszonen
-            const wohnflaeche = Math.min(params.wohnbereich, nutzflaeche * 0.4);
-            const privatflaeche = Math.min(params.privatbereich, nutzflaeche * 0.2);
-            const gemeinschaftsflaeche = Math.min(params.gemeinschaft, nutzflaeche * 0.15);
-            const nebenflaeche = Math.min(params.nebenraeume, nutzflaeche * 0.1);
-            
-            // Farben für Zonen
-            const zoneColors = {
-                wohnen: 0x90EE90,
-                privat: 0xADD8E6,
-                gemeinschaft: 0xFFB6C1,
-                neben: 0xD3D3D3,
-                verkehr: 0xFFA500
-            };
-            
-            // Generiere Zonen für jedes Geschoss (außer EG)
-            for (let k = 1; k < geschosse; k++) {
-                // Zonen als farbige Flächen auf dem Boden
-                const zoneHoehe = 0.05;
-                const zoneY = k * geschosshoehe + zoneHoehe / 2;
-                
-                // Wohnzone (Südseite - mehr Sonne)
-                const wohnBreite = breite * 0.5;
-                const wohnTiefe = tiefe * 0.4;
-                const wohnZone = new THREE.Mesh(
-                    new THREE.BoxGeometry(wohnBreite, zoneHoehe, wohnTiefe),
-                    new THREE.MeshStandardMaterial({ color: zoneColors.wohnen, transparent: true, opacity: 0.5 })
-                );
-                wohnZone.position.set(
-                    offsetX + breite * 0.25,
-                    zoneY,
-                    offsetZ + tiefe * 0.8
-                );
-                konfiguratorGruppe.add(wohnZone);
-                
-                // Privatzone (Nordseite)
-                const privatZone = new THREE.Mesh(
-                    new THREE.BoxGeometry(breite * 0.3, zoneHoehe, tiefe * 0.3),
-                    new THREE.MeshStandardMaterial({ color: zoneColors.privat, transparent: true, opacity: 0.5 })
-                );
-                privatZone.position.set(
-                    offsetX + breite * 0.15,
-                    zoneY,
-                    offsetZ + tiefe * 0.15
-                );
-                konfiguratorGruppe.add(privatZone);
-                
-                // Gemeinschaftszone (Mitte)
-                const gemeinschaftZone = new THREE.Mesh(
-                    new THREE.BoxGeometry(breite * 0.2, zoneHoehe, tiefe * 0.3),
-                    new THREE.MeshStandardMaterial({ color: zoneColors.gemeinschaft, transparent: true, opacity: 0.5 })
-                );
-                gemeinschaftZone.position.set(
-                    offsetX + breite * 0.5,
-                    zoneY,
-                    offsetZ + tiefe * 0.5
-                );
-                konfiguratorGruppe.add(gemeinschaftZone);
-                
-                // Nebenraumzone
-                const nebenZone = new THREE.Mesh(
-                    new THREE.BoxGeometry(breite * 0.2, zoneHoehe, tiefe * 0.2),
-                    new THREE.MeshStandardMaterial({ color: zoneColors.neben, transparent: true, opacity: 0.5 })
-                );
-                nebenZone.position.set(
-                    offsetX + breite * 0.8,
-                    zoneY,
-                    offsetZ + tiefe * 0.1
-                );
-                konfiguratorGruppe.add(nebenZone);
-                
-                // Verkehrsfläche (Mittelgang)
-                const verkehrZone = new THREE.Mesh(
-                    new THREE.BoxGeometry(breite * 0.1, zoneHoehe, tiefe),
-                    new THREE.MeshStandardMaterial({ color: zoneColors.verkehr, transparent: true, opacity: 0.5 })
-                );
-                verkehrZone.position.set(
-                    offsetX + breite * 0.5,
-                    zoneY,
-                    offsetZ + tiefe * 0.5
-                );
-                konfiguratorGruppe.add(verkehrZone);
-            }
-        }
-        
         // Statistik-Funktion
         function updateStats(breite, tiefe, hoehe, geschosse, rasterweite) {
             const grundflaeche = breite * tiefe;
@@ -1079,22 +924,19 @@ function buildKontext() {
             const bri = bruttoRauminhalt;
             const gf = grundflaeche;
             
-            // GRZ/GFZ Berechnung (Annahme Grundstücksgröße = 1.5 * Gebäudegrundfläche)
+            // GRZ/GFZ Berechnung
             const grundstuecksflaeche = gf * 1.5;
             const grz = gf / grundstuecksflaeche;
             const gfz = bgf / grundstuecksflaeche;
             
             // Wohnflächeneffizienz
-            const wohnflaeche = geschossflaeche * 0.7; // 70% der Geschossfläche
+            const wohnflaeche = geschossflaeche * 0.7;
             const effizienz = wohnflaeche / geschossflaeche;
             
             // Kosten- und CO2-Schätzung
             const matParams = materialParams[params.material];
             const kosten = geschossflaeche * matParams.kosten;
             const co2 = geschossflaeche * matParams.co2;
-            
-            // Sonnenstunden-Analyse
-            const durchschnittlicheSonnenstunden = calculateAverageSunHours(breite, tiefe);
             
             document.getElementById('statsContent').innerHTML = `
                 <p><strong>DIN 277 Kennwerte:</strong></p>
@@ -1108,30 +950,12 @@ function buildKontext() {
                 <p>Geschosse: ${geschosse}</p>
                 <p>A/V-Verhältnis: ${avVerhaeltnis.toFixed(2)}</p>
                 <p>Wohnflächeneffizienz: ${(effizienz * 100).toFixed(1)}%</p>
-                <p>Ø Sonnenstunden: ${durchschnittlicheSonnenstunden.toFixed(1)} h</p>
                 <hr>
                 <p><strong>Kosten & CO₂:</strong></p>
                 <p>Geschätzte Kosten: ${(kosten / 1000).toFixed(0)} k€</p>
                 <p>CO₂-Emissionen: ${co2.toFixed(0)} kg</p>
                 <p>Rasterweite: ${rasterweite.toFixed(1)} m</p>
             `;
-        }
-        
-        // Hilfsfunktion für durchschnittliche Sonnenstunden
-        function calculateAverageSunHours(breite, tiefe) {
-            let total = 0;
-            let count = 0;
-            
-            for (let i = 0; i < 10; i++) {
-                for (let j = 0; j < 10; j++) {
-                    const x = -breite/2 + (i + 0.5) * breite / 10;
-                    const z = -tiefe/2 + (j + 0.5) * tiefe / 10;
-                    total += calculateSunHours(x, z, breite, tiefe);
-                    count++;
-                }
-            }
-            
-            return total / count;
         }
         
         // Event-Listener für Controls
@@ -1203,45 +1027,15 @@ function buildKontext() {
             buildKonfigurator();
         });
         
-        document.getElementById('wohnbereich').addEventListener('input', (e) => {
-            params.wohnbereich = parseFloat(e.target.value);
-            document.getElementById('wohnbereichValue').textContent = params.wohnbereich;
-            buildKonfigurator();
-        });
-        
-        document.getElementById('privatbereich').addEventListener('input', (e) => {
-            params.privatbereich = parseFloat(e.target.value);
-            document.getElementById('privatbereichValue').textContent = params.privatbereich;
-            buildKonfigurator();
-        });
-        
-        document.getElementById('gemeinschaft').addEventListener('input', (e) => {
-            params.gemeinschaft = parseFloat(e.target.value);
-            document.getElementById('gemeinschaftValue').textContent = params.gemeinschaft;
-            buildKonfigurator();
-        });
-        
-        document.getElementById('nebenraeume').addEventListener('input', (e) => {
-            params.nebenraeume = parseFloat(e.target.value);
-            document.getElementById('nebenraeumeValue').textContent = params.nebenraeume;
-            buildKonfigurator();
-        });
-        
-        document.getElementById('verkehrsflaeche').addEventListener('input', (e) => {
-            params.verkehrsflaeche = parseFloat(e.target.value);
-            document.getElementById('verkehrsflaecheValue').textContent = params.verkehrsflaeche;
-            buildKonfigurator();
-        });
-        
         // Export-Funktionen
         window.exportOBJ = () => {
-            const exporter = new OBJExporter();
+            const exporter = new THREE.OBJExporter();
             const result = exporter.parse(konfiguratorGruppe);
             downloadFile('gebaeude.obj', result);
         };
         
         window.exportGLTF = () => {
-            const exporter = new GLTFExporter();
+            const exporter = new THREE.GLTFExporter();
             exporter.parse(konfiguratorGruppe, (result) => {
                 const output = JSON.stringify(result, null, 2);
                 downloadFile('gebaeude.gltf', output);
