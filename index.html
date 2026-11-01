@@ -352,28 +352,18 @@ function buildKonfigurator() {
   const kostenProM2 = { holz: 1500, stahl: 2000, stahlbeton: 1800 };
   const geschätzteKosten = bgf * kostenProM2[materialTyp];
 
-  const anzahlAchsenBreite = Math.floor(breite / rastertiefe) + 1;
-  const anzahlAchsenTiefe = Math.floor(tiefe / rastertiefe) + 1;
+  // ✅ FIXED: Grid distributed across full building footprint
+  // First axis at 0, last axis at full width/depth
+  const anzahlAchsenBreite = Math.max(2, Math.round(breite / rastertiefe) + 1);
+  const anzahlAchsenTiefe = Math.max(2, Math.round(tiefe / rastertiefe) + 1);
   const rastervorlageBreite = [];
   const rastervorlageTiefe = [];
 
   for (let i = 0; i < anzahlAchsenBreite; i++) {
-    rastervorlageBreite.push(i * rastertiefe);
+    rastervorlageBreite.push((i / (anzahlAchsenBreite - 1)) * breite);
   }
   for (let i = 0; i < anzahlAchsenTiefe; i++) {
-    rastervorlageTiefe.push(i * rastertiefe);
-  }
-
-  const maxBreite = breite;
-  const maxTiefe = tiefe;
-  const letzteAchseBreite = rastervorlageBreite[rastervorlageBreite.length - 1];
-  const letzteAchseTiefe = rastervorlageTiefe[rastervorlageTiefe.length - 1];
-
-  if (letzteAchseBreite > maxBreite) {
-    rastervorlageBreite.pop();
-  }
-  if (letzteAchseTiefe > maxTiefe) {
-    rastervorlageTiefe.pop();
+    rastervorlageTiefe.push((i / (anzahlAchsenTiefe - 1)) * tiefe);
   }
 
   const stuetzen = [];
@@ -438,15 +428,24 @@ function buildKonfigurator() {
     }
   }
 
-  // ✅ Floor slabs on every floor
+  // ✅ FIXED: Floor slabs correctly positioned at floor boundaries
   const bodenMaterial = new THREE.MeshStandardMaterial({ color: 0x90EE90 });
   const deckenMaterial = new THREE.MeshStandardMaterial({ color: 0xD3D3D3, roughness: 0.6 });
 
-  for (let k = 0; k < geschosszahl; k++) {
-    const y = k * geschossHoehe + geschossHoehe / 2;
+  // Ground floor slab at Y = 0
+  const boden = new THREE.Mesh(
+    new THREE.BoxGeometry(breite, 0.1, tiefe),
+    bodenMaterial
+  );
+  boden.position.set(0, 0.05, tiefe / 2);
+  konfiguratorGruppe.add(boden);
+
+  // Upper floor slabs at floor boundaries
+  for (let k = 1; k < geschosszahl; k++) {
+    const y = k * geschossHoehe;
     const decke = new THREE.Mesh(
       new THREE.BoxGeometry(breite, 0.1, tiefe),
-      k === 0 ? bodenMaterial : deckenMaterial
+      deckenMaterial
     );
     decke.position.set(0, y, tiefe / 2);
     konfiguratorGruppe.add(decke);
@@ -474,7 +473,6 @@ function buildKonfigurator() {
       konfiguratorGruppe.add(zone);
     } else {
       // Upper floors: residential zones
-      // Living zone (front)
       const wohnen = new THREE.Mesh(
         new THREE.BoxGeometry(breite * 0.5, 0.05, tiefe * 0.4),
         zonenMaterial.wohnen
@@ -482,7 +480,6 @@ function buildKonfigurator() {
       wohnen.position.set(-breite * 0.15, y - geschossHoehe / 2 + 0.1, tiefe * 0.3);
       konfiguratorGruppe.add(wohnen);
 
-      // Private zone (back)
       const privat = new THREE.Mesh(
         new THREE.BoxGeometry(breite * 0.4, 0.05, tiefe * 0.3),
         zonenMaterial.privat
@@ -490,7 +487,6 @@ function buildKonfigurator() {
       privat.position.set(breite * 0.15, y - geschossHoehe / 2 + 0.1, tiefe * 0.7);
       konfiguratorGruppe.add(privat);
 
-      // Circulation zone (side)
       const verkehr = new THREE.Mesh(
         new THREE.BoxGeometry(breite * 0.2, 0.05, tiefe * 0.8),
         zonenMaterial.verkehr
@@ -498,7 +494,6 @@ function buildKonfigurator() {
       verkehr.position.set(-breite * 0.35, y - geschossHoehe / 2 + 0.1, tiefe / 2);
       konfiguratorGruppe.add(verkehr);
 
-      // Ancillary zone
       const neben = new THREE.Mesh(
         new THREE.BoxGeometry(breite * 0.2, 0.05, tiefe * 0.3),
         zonenMaterial.neben
@@ -514,7 +509,6 @@ function buildKonfigurator() {
   for (let k = 0; k < geschosszahl; k++) {
     const y = k * geschossHoehe + geschossHoehe / 2;
 
-    // Simple partition walls
     const partition1 = new THREE.Mesh(
       new THREE.BoxGeometry(0.1, geschossHoehe * 0.8, tiefe * 0.3),
       partitionMaterial
@@ -529,7 +523,6 @@ function buildKonfigurator() {
     partition2.position.set(breite * 0.1, y, tiefe * 0.5);
     konfiguratorGruppe.add(partition2);
 
-    // Stair/core element
     const stairCore = new THREE.Mesh(
       new THREE.BoxGeometry(breite * 0.15, geschossHoehe * 0.9, tiefe * 0.2),
       partitionMaterial
@@ -548,7 +541,6 @@ function buildKonfigurator() {
 
   for (let z of fassadenZ) {
     const zPos = z;
-    const istHoffassade = z === tiefe;
 
     // Wall sections between windows
     for (let i = 0; i < rastervorlageBreite.length - 1; i++) {
@@ -559,7 +551,7 @@ function buildKonfigurator() {
       for (let k = 0; k < geschosszahl; k++) {
         const y = k * geschossHoehe + geschossHoehe / 2;
 
-        // Wall below window (reduced height)
+        // Wall below window
         const wallBelow = new THREE.Mesh(
           new THREE.BoxGeometry(laenge, geschossHoehe * 0.3, 0.1),
           wandMaterial
@@ -567,7 +559,7 @@ function buildKonfigurator() {
         wallBelow.position.set((x1 + x2) / 2, y - geschossHoehe * 0.35, zPos);
         konfiguratorGruppe.add(wallBelow);
 
-        // Wall above window (reduced height)
+        // Wall above window
         const wallAbove = new THREE.Mesh(
           new THREE.BoxGeometry(laenge, geschossHoehe * 0.2, 0.1),
           wandMaterial
@@ -575,7 +567,7 @@ function buildKonfigurator() {
         wallAbove.position.set((x1 + x2) / 2, y + geschossHoehe * 0.4, zPos);
         konfiguratorGruppe.add(wallAbove);
 
-        // Window opening (larger)
+        // Window opening
         const fensterBreite = laenge * 0.7;
         const fensterHoehe = geschossHoehe * 0.5;
         const fenster = new THREE.Mesh(
@@ -708,7 +700,7 @@ function buildKonfigurator() {
 function eigenesKriterium(ctx = {}) {
   const { breite, tiefe, geschosse, traufe, gruppe } = ctx;
 
-  // Calculate total facade area (street + courtyard)
+  // Calculate total facade area (street + courtyard only)
   const strassenFassadeFlaeche = breite * traufe;
   const hoffassadeFlaeche = breite * traufe;
   const gesamtFassadenFlaeche = strassenFassadeFlaeche + hoffassadeFlaeche;
