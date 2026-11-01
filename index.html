@@ -524,16 +524,17 @@ function buildKonfigurator() {
 function eigenesKriterium(ctx = {}) {
   const { breite, tiefe, geschosse, traufe, gruppe } = ctx;
 
-  const fensteranordnung = document.getElementById('fensteranordnung').value;
-  const fensterbreite = parseFloat(document.getElementById('fensterbreite').value);
-  const fensterhoehe = parseFloat(document.getElementById('fensterhoehe').value);
-  const balkon = document.getElementById('balkon').checked;
+  // Safely access DOM elements with optional chaining and fallbacks
+  const fensteranordnung = document.getElementById('fensteranordnung')?.value || '';
+  const fensterbreite = parseFloat(document.getElementById('fensterbreite')?.value || 0);
+  const fensterhoehe = parseFloat(document.getElementById('fensterhoehe')?.value || 0);
+  const balkon = document.getElementById('balkon')?.checked || false;
 
   const fensterFlaeche = berechneFensterFlaeche(
     breite, tiefe, geschosse, 5.0, fensteranordnung, fensterbreite, fensterhoehe, balkon
   );
 
-  const fassadenFlaeche = berechneFassadenFlaeche(breite, tiefe, geschosse, traufe, document.getElementById('dachform').value, document.getElementById('dachneigung').value);
+  const fassadenFlaeche = berechneFassadenFlaeche(breite, tiefe, geschosse, traufe, document.getElementById('dachform')?.value || '', document.getElementById('dachneigung')?.value || 0);
 
   const oeffnungsanteil = fassadenFlaeche > 0 ? (fensterFlaeche / fassadenFlaeche) * 100 : 0;
 
