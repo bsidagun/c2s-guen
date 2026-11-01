@@ -530,6 +530,63 @@ function eigenesKriterium(ctx = {}) {
   const fensterhoehe = parseFloat(document.getElementById('fensterhoehe')?.value || 0);
   const balkon = document.getElementById('balkon')?.checked || false;
 
+  // Define berechneFensterFlaeche inside eigenesKriterium
+  function berechneFensterFlaeche(breite, tiefe, geschosse, defaultVal, anordnung, fBreite, fHoehe, hatBalkon) {
+    let fensterFlaeche = 0;
+
+    // Straßenfassade (Breite) und Hoffassade (Tiefe) – jeweils alle Geschosse
+    const strassenFassadeFlaeche = breite * (geschosse * 3); // Annahme: 3m Höhe pro Geschoss
+    const hoffassadeFlaeche = tiefe * (geschosse * 3);
+
+    // Anzahl Fenster pro Fassade
+    const fensterProFassade = {
+      standard: 4,
+      breit: 3,
+      hoch: 3,
+      klein: 9
+    }[anordnung] || 4;
+
+    // Anzahl Fenster pro Geschoss
+    const fensterProGeschoss = fensterProFassade;
+
+    // Gesamtanzahl Fenster (für beide Fassaden)
+    const gesamtFenster = 2 * fensterProGeschoss * geschosse;
+
+    // Gesamtfläche der Fenster
+    fensterFlaeche = gesamtFenster * fBreite * fHoehe;
+
+    // Wenn Balkon vorhanden, reduziere Fensterfläche um Balkonfläche
+    if (hatBalkon) {
+      const balkonBreite = breite * 0.8;
+      const balkonHoehe = 0.5;
+      const balkonFlaeche = balkonBreite * balkonHoehe * geschosse;
+      fensterFlaeche = Math.max(0, fensterFlaeche - balkonFlaeche);
+    }
+
+    return fensterFlaeche;
+  }
+
+  // Define berechneFassadenFlaeche inside eigenesKriterium
+  function berechneFassadenFlaeche(breite, tiefe, geschosse, traufe, dachform, dachneigung) {
+    let fassadenFlaeche = 0;
+
+    // Straßenfassade (Breite) und Hoffassade (Tiefe) – jeweils alle Geschosse
+    const strassenFassadeFlaeche = breite * (geschosse * traufe);
+    const hoffassadeFlaeche = tiefe * (geschosse * traufe);
+
+    // Dachform beeinflusst die Fassadenfläche
+    if (dachform === 'satteldach') {
+      const dachHoehe = (breite / 2) * Math.tan(dachneigung * Math.PI / 180);
+      const dachFlaeche = 2 * (0.5 * breite * dachHoehe);
+      const dachFlaecheProFassade = dachFlaeche / 2;
+      fassadenFlaeche += strassenFassadeFlaeche + hoffassadeFlaeche + dachFlaecheProFassade * 2;
+    } else {
+      fassadenFlaeche += strassenFassadeFlaeche + hoffassadeFlaeche;
+    }
+
+    return fassadenFlaeche;
+  }
+
   const fensterFlaeche = berechneFensterFlaeche(
     breite, tiefe, geschosse, 5.0, fensteranordnung, fensterbreite, fensterhoehe, balkon
   );
