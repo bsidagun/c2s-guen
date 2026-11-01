@@ -508,6 +508,36 @@ function buildKonfigurator() {
     }
   }
 
+  // ✅ Interior partition walls
+  const partitionMaterial = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, roughness: 0.8 });
+
+  for (let k = 0; k < geschosszahl; k++) {
+    const y = k * geschossHoehe + geschossHoehe / 2;
+
+    // Simple partition walls
+    const partition1 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.1, geschossHoehe * 0.8, tiefe * 0.3),
+      partitionMaterial
+    );
+    partition1.position.set(-breite * 0.1, y, tiefe * 0.5);
+    konfiguratorGruppe.add(partition1);
+
+    const partition2 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.1, geschossHoehe * 0.8, tiefe * 0.3),
+      partitionMaterial
+    );
+    partition2.position.set(breite * 0.1, y, tiefe * 0.5);
+    konfiguratorGruppe.add(partition2);
+
+    // Stair/core element
+    const stairCore = new THREE.Mesh(
+      new THREE.BoxGeometry(breite * 0.15, geschossHoehe * 0.9, tiefe * 0.2),
+      partitionMaterial
+    );
+    stairCore.position.set(-breite * 0.35, y, tiefe * 0.5);
+    konfiguratorGruppe.add(stairCore);
+  }
+
   // ✅ Facade with real window openings
   const wandMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
   const fensterMaterial = new THREE.MeshStandardMaterial({ color: 0xADD8E6, roughness: 0.3, transparent: true, opacity: 0.8 });
@@ -553,6 +583,7 @@ function buildKonfigurator() {
           fensterMaterial
         );
         fenster.position.set((x1 + x2) / 2, y, zPos);
+        fenster.userData.type = 'window'; // ✅ Mark as window for eigenesKriterium
         konfiguratorGruppe.add(fenster);
 
         // Window frame
@@ -598,36 +629,36 @@ function buildKonfigurator() {
 
       // Balcony railing - front edge
       const railingFront = new THREE.Mesh(
-        new THREE.BoxGeometry(balkonBreite, 1.0, 0.05),
+        new THREE.BoxGeometry(balkonBreite, 1.05, 0.05),
         railingMaterial
       );
-      railingFront.position.set(x, y - geschossHoehe / 2 + 0.5, -balkonTiefe);
+      railingFront.position.set(x, y - geschossHoehe / 2 + 0.525, -balkonTiefe);
       konfiguratorGruppe.add(railingFront);
 
       // Balcony railing - left side
       const railingLeft = new THREE.Mesh(
-        new THREE.BoxGeometry(0.05, 1.0, balkonTiefe),
+        new THREE.BoxGeometry(0.05, 1.05, balkonTiefe),
         railingMaterial
       );
-      railingLeft.position.set(x - balkonBreite / 2, y - geschossHoehe / 2 + 0.5, -balkonTiefe / 2);
+      railingLeft.position.set(x - balkonBreite / 2, y - geschossHoehe / 2 + 0.525, -balkonTiefe / 2);
       konfiguratorGruppe.add(railingLeft);
 
       // Balcony railing - right side
       const railingRight = new THREE.Mesh(
-        new THREE.BoxGeometry(0.05, 1.0, balkonTiefe),
+        new THREE.BoxGeometry(0.05, 1.05, balkonTiefe),
         railingMaterial
       );
-      railingRight.position.set(x + balkonBreite / 2, y - geschossHoehe / 2 + 0.5, -balkonTiefe / 2);
+      railingRight.position.set(x + balkonBreite / 2, y - geschossHoehe / 2 + 0.525, -balkonTiefe / 2);
       konfiguratorGruppe.add(railingRight);
 
       // Balcony railing - vertical posts
       for (let p = 0; p < 4; p++) {
         const postX = x - balkonBreite / 2 + (p / 3) * balkonBreite;
         const post = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.02, 0.02, 1.0, 4),
+          new THREE.CylinderGeometry(0.02, 0.02, 1.05, 4),
           railingMaterial
         );
-        post.position.set(postX, y - geschossHoehe / 2 + 0.5, -balkonTiefe);
+        post.position.set(postX, y - geschossHoehe / 2 + 0.525, -balkonTiefe);
         konfiguratorGruppe.add(post);
       }
     }
@@ -677,76 +708,30 @@ function buildKonfigurator() {
 function eigenesKriterium(ctx = {}) {
   const { breite, tiefe, geschosse, traufe, gruppe } = ctx;
 
-  // Safely access DOM elements with optional chaining and fallbacks
-  const fensteranordnung = document.getElementById('fensteranordnung')?.value || '';
-  const fensterbreite = parseFloat(document.getElementById('fensterbreite')?.value || 0);
-  const fensterhoehe = parseFloat(document.getElementById('fensterhoehe')?.value || 0);
-  const balkon = document.getElementById('balkon')?.checked || false;
+  // Calculate total facade area (street + courtyard)
+  const strassenFassadeFlaeche = breite * traufe;
+  const hoffassadeFlaeche = breite * traufe;
+  const gesamtFassadenFlaeche = strassenFassadeFlaeche + hoffassadeFlaeche;
 
-  // Define berechneFensterFlaeche inside eigenesKriterium
-  function berechneFensterFlaeche(breite, tiefe, geschosse, defaultVal, anordnung, fBreite, fHoehe, hatBalkon) {
-    let fensterFlaeche = 0;
+  // Calculate total window area from actual generated windows
+  let fensterFlaeche = 0;
 
-    // Straßenfassade (Breite) und Hoffassade (Tiefe) – jeweils alle Geschosse
-    const strassenFassadeFlaeche = breite * (geschosse * 3); // Annahme: 3m Höhe pro Geschoss
-    const hoffassadeFlaeche = tiefe * (geschosse * 3);
-
-    // Anzahl Fenster pro Fassade
-    const fensterProFassade = {
-      standard: 4,
-      breit: 3,
-      hoch: 3,
-      klein: 9
-    }[anordnung] || 4;
-
-    // Anzahl Fenster pro Geschoss
-    const fensterProGeschoss = fensterProFassade;
-
-    // Gesamtanzahl Fenster (für beide Fassaden)
-    const gesamtFenster = 2 * fensterProGeschoss * geschosse;
-
-    // Gesamtfläche der Fenster
-    fensterFlaeche = gesamtFenster * fBreite * fHoehe;
-
-    // Wenn Balkon vorhanden, reduziere Fensterfläche um Balkonfläche
-    if (hatBalkon) {
-      const balkonBreite = breite * 0.8;
-      const balkonHoehe = 0.5;
-      const balkonFlaeche = balkonBreite * balkonHoehe * geschosse;
-      fensterFlaeche = Math.max(0, fensterFlaeche - balkonFlaeche);
-    }
-
-    return fensterFlaeche;
+  if (gruppe) {
+    gruppe.traverse((obj) => {
+      if (obj.isMesh && obj.userData && obj.userData.type === 'window') {
+        // Get window dimensions from geometry
+        const geometry = obj.geometry;
+        if (geometry && geometry.parameters) {
+          const w = geometry.parameters.width || 0;
+          const h = geometry.parameters.height || 0;
+          fensterFlaeche += w * h;
+        }
+      }
+    });
   }
 
-  // Define berechneFassadenFlaeche inside eigenesKriterium
-  function berechneFassadenFlaeche(breite, tiefe, geschosse, traufe, dachform, dachneigung) {
-    let fassadenFlaeche = 0;
-
-    // Straßenfassade (Breite) und Hoffassade (Tiefe) – jeweils alle Geschosse
-    const strassenFassadeFlaeche = breite * (geschosse * traufe);
-    const hoffassadeFlaeche = tiefe * (geschosse * traufe);
-
-    // Dachform beeinflusst die Fassadenfläche
-    if (dachform === 'satteldach') {
-      const dachHoehe = (breite / 2) * Math.tan(dachneigung * Math.PI / 180);
-      const dachFlaeche = 2 * (0.5 * breite * dachHoehe);
-      const dachFlaecheProFassade = dachFlaeche / 2;
-      fassadenFlaeche += strassenFassadeFlaeche + hoffassadeFlaeche + dachFlaecheProFassade * 2;
-    } else {
-      fassadenFlaeche += strassenFassadeFlaeche + hoffassadeFlaeche;
-    }
-
-    return fassadenFlaeche;
-  }
-
-  const fensterFlaeche = berechneFensterFlaeche(
-    breite, tiefe, geschosse, 5.0, fensteranordnung, fensterbreite, fensterhoehe, balkon
-  );
-
-  const fassadenFlaeche = berechneFassadenFlaeche(breite, tiefe, geschosse, traufe, document.getElementById('dachform')?.value || '', document.getElementById('dachneigung')?.value || 0);
-
-  const oeffnungsanteil = fassadenFlaeche > 0 ? (fensterFlaeche / fassadenFlaeche) * 100 : 0;
+  // Calculate Window-to-Facade Ratio
+  const oeffnungsanteil = gesamtFassadenFlaeche > 0 ? (fensterFlaeche / gesamtFassadenFlaeche) * 100 : 0;
 
   return {
     label: "Window-to-Facade Ratio",
