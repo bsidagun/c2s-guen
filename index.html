@@ -384,10 +384,11 @@ function buildKonfigurator() {
   // Z: from 0 to tiefe (NOT centered - starts at street)
   // Y: from 0 to hoehe (ground level)
 
+  // ✅ Columns
   for (let i = 0; i < rastervorlageBreite.length; i++) {
     for (let j = 0; j < rastervorlageTiefe.length; j++) {
       const x = rastervorlageBreite[i] - breite / 2;
-      const z1 = rastervorlageTiefe[j]; // ✅ Z starts at 0, not -tiefe/2
+      const z1 = rastervorlageTiefe[j];
       for (let k = 0; k < geschosszahl; k++) {
         const y = k * geschossHoehe + geschossHoehe / 2;
         const stuetze = new THREE.Mesh(
@@ -401,8 +402,9 @@ function buildKonfigurator() {
     }
   }
 
+  // ✅ Beams (X direction)
   for (let i = 0; i < rastervorlageTiefe.length; i++) {
-    const z1 = rastervorlageTiefe[i]; // ✅ Z starts at 0
+    const z1 = rastervorlageTiefe[i];
     for (let k = 0; k < geschosszahl; k++) {
       const y = k * geschossHoehe + geschossHoehe / 2;
       for (let j = 0; j < rastervorlageBreite.length - 1; j++) {
@@ -418,12 +420,13 @@ function buildKonfigurator() {
     }
   }
 
+  // ✅ Beams (Z direction)
   for (let i = 0; i < rastervorlageBreite.length; i++) {
     const x = rastervorlageBreite[i] - breite / 2;
     for (let k = 0; k < geschosszahl; k++) {
       const y = k * geschossHoehe + geschossHoehe / 2;
       for (let j = 0; j < rastervorlageTiefe.length - 1; j++) {
-        const z1 = rastervorlageTiefe[j]; // ✅ Z starts at 0
+        const z1 = rastervorlageTiefe[j];
         const z2 = rastervorlageTiefe[j + 1];
         const laenge = z2 - z1;
         const traegerGeometrie = new THREE.BoxGeometry(0.1, 0.1, laenge);
@@ -435,41 +438,123 @@ function buildKonfigurator() {
     }
   }
 
-  // ✅ CORRECTED: Full building massing
-  // Floor
+  // ✅ Floor slabs on every floor
   const bodenMaterial = new THREE.MeshStandardMaterial({ color: 0x90EE90 });
-  const boden = new THREE.Mesh(
-    new THREE.BoxGeometry(breite, 0.1, tiefe),
-    bodenMaterial
-  );
-  boden.position.set(0, 0.05, tiefe / 2); // ✅ Z centered at tiefe/2
-  konfiguratorGruppe.add(boden);
+  const deckenMaterial = new THREE.MeshStandardMaterial({ color: 0xD3D3D3, roughness: 0.6 });
 
-  // Walls
+  for (let k = 0; k < geschosszahl; k++) {
+    const y = k * geschossHoehe + geschossHoehe / 2;
+    const decke = new THREE.Mesh(
+      new THREE.BoxGeometry(breite, 0.1, tiefe),
+      k === 0 ? bodenMaterial : deckenMaterial
+    );
+    decke.position.set(0, y, tiefe / 2);
+    konfiguratorGruppe.add(decke);
+  }
+
+  // ✅ Facade with real window openings
   const wandMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
-  const wandBreite = new THREE.BoxGeometry(breite, hoehe, 0.1);
-  const wandTiefe = new THREE.BoxGeometry(0.1, hoehe, tiefe); // ✅ Side walls along Z axis
-  const wand1 = new THREE.Mesh(wandBreite, wandMaterial);
-  wand1.position.set(0, hoehe / 2, 0); // ✅ Street facade at Z=0
-  konfiguratorGruppe.add(wand1);
+  const fensterMaterial = new THREE.MeshStandardMaterial({ color: 0xADD8E6, roughness: 0.3, transparent: true, opacity: 0.8 });
+  const rahmenMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
 
-  const wand2 = new THREE.Mesh(wandBreite, wandMaterial);
-  wand2.position.set(0, hoehe / 2, tiefe); // ✅ Courtyard facade at Z=tiefe
-  konfiguratorGruppe.add(wand2);
+  // Street facade (Z = 0) and Courtyard facade (Z = tiefe)
+  const fassadenZ = [0, tiefe];
 
+  for (let z of fassadenZ) {
+    const zPos = z;
+    const istHoffassade = z === tiefe;
+
+    // Wall sections between windows
+    for (let i = 0; i < rastervorlageBreite.length - 1; i++) {
+      const x1 = rastervorlageBreite[i] - breite / 2;
+      const x2 = rastervorlageBreite[i + 1] - breite / 2;
+      const laenge = x2 - x1;
+
+      for (let k = 0; k < geschosszahl; k++) {
+        const y = k * geschossHoehe + geschossHoehe / 2;
+
+        // Wall below window
+        const wallBelow = new THREE.Mesh(
+          new THREE.BoxGeometry(laenge, geschossHoehe * 0.4, 0.1),
+          wandMaterial
+        );
+        wallBelow.position.set((x1 + x2) / 2, y - geschossHoehe * 0.3, zPos);
+        konfiguratorGruppe.add(wallBelow);
+
+        // Wall above window
+        const wallAbove = new THREE.Mesh(
+          new THREE.BoxGeometry(laenge, geschossHoehe * 0.3, 0.1),
+          wandMaterial
+        );
+        wallAbove.position.set((x1 + x2) / 2, y + geschossHoehe * 0.35, zPos);
+        konfiguratorGruppe.add(wallAbove);
+
+        // Window opening
+        const fensterBreite = laenge * 0.6;
+        const fensterHoehe = geschossHoehe * 0.5;
+        const fenster = new THREE.Mesh(
+          new THREE.BoxGeometry(fensterBreite, fensterHoehe, 0.05),
+          fensterMaterial
+        );
+        fenster.position.set((x1 + x2) / 2, y, zPos);
+        konfiguratorGruppe.add(fenster);
+
+        // Window frame
+        const rahmen = new THREE.Mesh(
+          new THREE.BoxGeometry(fensterBreite + 0.1, fensterHoehe + 0.1, 0.05),
+          rahmenMaterial
+        );
+        rahmen.position.set((x1 + x2) / 2, y, zPos);
+        konfiguratorGruppe.add(rahmen);
+      }
+    }
+  }
+
+  // ✅ Party walls (closed)
+  const wandTiefe = new THREE.BoxGeometry(0.1, hoehe, tiefe);
   const wand3 = new THREE.Mesh(wandTiefe, wandMaterial);
-  wand3.position.set(-breite / 2, hoehe / 2, tiefe / 2); // ✅ Left party wall
+  wand3.position.set(-breite / 2, hoehe / 2, tiefe / 2);
   konfiguratorGruppe.add(wand3);
 
   const wand4 = new THREE.Mesh(wandTiefe, wandMaterial);
-  wand4.position.set(breite / 2, hoehe / 2, tiefe / 2); // ✅ Right party wall
+  wand4.position.set(breite / 2, hoehe / 2, tiefe / 2);
   konfiguratorGruppe.add(wand4);
 
-  // Roof
+  // ✅ Balconies on street facade (Z = 0)
+  const balkonMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.7 });
+  const balkonTiefe = 1.2;
+  const balkonBreite = rastertiefe * 0.8;
+
+  for (let i = 0; i < rastervorlageBreite.length - 1; i++) {
+    const x = (rastervorlageBreite[i] + rastervorlageBreite[i + 1]) / 2 - breite / 2;
+
+    for (let k = 1; k < geschosszahl; k++) {
+      const y = k * geschossHoehe + geschossHoehe / 2;
+
+      // Balcony floor
+      const balkon = new THREE.Mesh(
+        new THREE.BoxGeometry(balkonBreite, 0.1, balkonTiefe),
+        balkonMaterial
+      );
+      balkon.position.set(x, y - geschossHoehe / 2, -balkonTiefe / 2);
+      konfiguratorGruppe.add(balkon);
+
+      // Balcony railing
+      const railingMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
+      const railing = new THREE.Mesh(
+        new THREE.BoxGeometry(balkonBreite, 0.8, 0.05),
+        railingMaterial
+      );
+      railing.position.set(x, y - geschossHoehe / 2 + 0.4, -balkonTiefe);
+      konfiguratorGruppe.add(railing);
+    }
+  }
+
+  // ✅ Roof
   const dachMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
   const dach = new THREE.BoxGeometry(breite, 0.5, tiefe);
   const dachMesh = new THREE.Mesh(dach, dachMaterial);
-  dachMesh.position.set(0, hoehe + 0.25, tiefe / 2); // ✅ Z centered at tiefe/2
+  dachMesh.position.set(0, hoehe + 0.25, tiefe / 2);
   konfiguratorGruppe.add(dachMesh);
 
   // ✅ Add null check before setting innerHTML
