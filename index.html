@@ -303,121 +303,197 @@ function buildKontext() {
 function buildKonfigurator() {
   konfiguratorGruppe.clear();
 
-  const breite = P.breite;
-  const tiefe = P.tiefe;
-  const traufhoehe = P.traufe;
+  const breite = grundstuecksBreite.value;
+  const tiefe = grundstuecksTiefe.value;
+  const hoehe = traufhoehe.value;
+  const rastertyp = aktuellesRaster;
+  const rastertiefe = rasterOptionen[rastertyp];
+  const materialTyp = document.querySelector('input[name="material"]:checked')?.value || 'stahlbeton';
 
-  // Tragwerksraster: klein, mittel, groß
-  const rasters = { klein: 2.0, mittel: 3.0, groß: 4.0 };
-  const rastertyp = "mittel"; // z. B. aus Slider
-  const rastert = rasters[rastertyp];
+  let materialTragwerk;
+  switch (materialTyp) {
+    case 'holz': materialTragwerk = materialHolz; break;
+    case 'stahl': materialTragwerk = materialStahl; break;
+    case 'stahlbeton': materialTragwerk = materialStahlbeton; break;
+    default: materialTragwerk = materialStahlbeton;
+  }
 
-  const xCount = Math.ceil(breite / rastert);
-  const zCount = Math.ceil(tiefe / rastert);
+  const geschossHoehe = hoehe / Math.ceil(hoehe / 3.0);
+  const geschosszahl = Math.ceil(hoehe / 3.0);
 
-  const stuetzenHoehe = traufhoehe / 1.5;
-  const stuetzenDurchmesser = 0.3;
-  const stuetzenMaterial = new THREE.MeshStandardMaterial({ color: 0x444444 });
-  const traegerMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
-  const deckenMaterial = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
-  const fassadenMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc });
-  const fensterMaterial = new THREE.MeshStandardMaterial({ color: 0x4488cc, transparent: true, opacity: 0.8 });
-  const balkonMaterial = new THREE.MeshStandardMaterial({ color: 0x886644 });
+  const grundflaeche = breite * tiefe;
+  const bgf = grundflaeche * geschosszahl;
+  const bri = bgf / (breite * tiefe);
+  const grz = grundflaeche / (breite * tiefe);
+  const gfz = bgf / (breite * tiefe);
+  const volumen = grundflaeche * hoehe;
+  const oberflaeche = 2 * (breite * hoehe + tiefe * hoehe) + 2 * breite * tiefe;
+  const avVerhaeltnis = oberflaeche / volumen;
 
-  // Stützen
-  for (let i = 0; i < xCount; i++) {
-    for (let j = 0; j < zCount; j++) {
-      const x = breite / 2 - (xCount - 1) * rastert / 2 + i * rastert;
-      const z = tiefe / 2 - (zCount - 1) * rastert / 2 + j * rastert;
-      const stuetze = new THREE.Mesh(
-        new THREE.CylinderGeometry(stuetzenDurchmesser / 2, stuetzenDurchmesser / 2, stuetzenHoehe, 8),
-        stuetzenMaterial
-      );
-      stuetze.position.set(x, stuetzenHoehe / 2, z);
-      konfiguratorGruppe.add(stuetze);
+  const co2ProM2 = { holz: 100, stahl: 1200, stahlbeton: 400 };
+  const geschätzteCo2 = bgf * co2ProM2[materialTyp];
+
+  const kostenProM2 = { holz: 1500, stahl: 2000, stahlbeton: 1800 };
+  const geschätzteKosten = bgf * kostenProM2[materialTyp];
+
+  const anzahlAchsenBreite = Math.floor(breite / rastertiefe) + 1;
+  const anzahlAchsenTiefe = Math.floor(tiefe / rastertiefe) + 1;
+  const rastervorlageBreite = [];
+  const rastervorlageTiefe = [];
+
+  for (let i = 0; i < anzahlAchsenBreite; i++) {
+    rastervorlageBreite.push(i * rastertiefe);
+  }
+  for (let i = 0; i < anzahlAchsenTiefe; i++) {
+    rastervorlageTiefe.push(i * rastertiefe);
+  }
+
+  const maxBreite = breite;
+  const maxTiefe = tiefe;
+  const letzteAchseBreite = rastervorlageBreite[rastervorlageBreite.length - 1];
+  const letzteAchseTiefe = rastervorlageTiefe[rastervorlageTiefe.length - 1];
+
+  if (letzteAchseBreite > maxBreite) {
+    rastervorlageBreite.pop();
+  }
+  if (letzteAchseTiefe > maxTiefe) {
+    rastervorlageTiefe.pop();
+  }
+
+  const stuetzen = [];
+  const traeger = [];
+
+  for (let i = 0; i < rastervorlageBreite.length; i++) {
+    for (let j = 0; j < rastervorlageTiefe.length; j++) {
+      const x = rastervorlageBreite[i] - breite / 2;
+      const z = rastervorlageTiefe[j] - tiefe / 2;
+
+      for (let k = 0; k < geschosszahl; k++) {
+        const y = k * geschossHoehe + geschossHoehe / 2;
+        const stuetze = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.1, 0.1, geschossHoehe, 8),
+          materialTragwerk
+        );
+        stuetze.position.set(x, y, z);
+        konfiguratorGruppe.add(stuetze);
+        stuetzen.push(stuetze);
+      }
     }
   }
 
-  // Träger (X-Richtung)
-  for (let j = 0; j < zCount; j++) {
-    const z = tiefe / 2 - (zCount - 1) * rastert / 2 + j * rastert;
-    for (let i = 0; i < xCount - 1; i++) {
-      const x1 = breite / 2 - (xCount - 1) * rastert / 2 + i * rastert;
-      const x2 = breite / 2 - (xCount - 1) * rastert / 2 + (i + 1) * rastert;
-      const traeger = new THREE.Mesh(
-        new THREE.BoxGeometry(x2 - x1, 0.2, 0.2),
-        traegerMaterial
-      );
-      traeger.position.set((x1 + x2) / 2, stuetzenHoehe / 2, z);
-      konfiguratorGruppe.add(traeger);
+  for (let i = 0; i < rastervorlageTiefe.length; i++) {
+    const z = rastervorlageTiefe[i] - tiefe / 2;
+    for (let k = 0; k < geschosszahl; k++) {
+      const y = k * geschossHoehe + geschossHoehe / 2;
+      for (let j = 0; j < rastervorlageBreite.length - 1; j++) {
+        const x1 = rastervorlageBreite[j] - breite / 2;
+        const x2 = rastervorlageBreite[j + 1] - breite / 2;
+        const laenge = x2 - x1;
+        const traegerGeometrie = new THREE.BoxGeometry(laenge, 0.1, 0.1);
+        const traegerObjekt = new THREE.Mesh(traegerGeometrie, materialTragwerk);
+        traegerObjekt.position.set((x1 + x2) / 2, y, z);
+        konfiguratorGruppe.add(traegerObjekt);
+        traeger.push(traegerObjekt);
+      }
     }
   }
 
-  // Träger (Z-Richtung)
-  for (let i = 0; i < xCount; i++) {
-    const x = breite / 2 - (xCount - 1) * rastert / 2 + i * rastert;
-    for (let j = 0; j < zCount - 1; j++) {
-      const z1 = tiefe / 2 - (zCount - 1) * rastert / 2 + j * rastert;
-      const z2 = tiefe / 2 - (zCount - 1) * rastert / 2 + (j + 1) * rastert;
-      const traeger = new THREE.Mesh(
-        new THREE.BoxGeometry(0.2, 0.2, z2 - z1),
-        traegerMaterial
-      );
-      traeger.position.set(x, stuetzenHoehe / 2, (z1 + z2) / 2);
-      konfiguratorGruppe.add(traeger);
+  for (let i = 0; i < rastervorlageBreite.length; i++) {
+    const x = rastervorlageBreite[i] - breite / 2;
+    for (let k = 0; k < geschosszahl; k++) {
+      const y = k * geschossHoehe + geschossHoehe / 2;
+      for (let j = 0; j < rastervorlageTiefe.length - 1; j++) {
+        const z1 = rastervorlageTiefe[j] - tiefe / 2;
+        const z2 = rastervorlageTiefe[j + 1] - tiefe / 2;
+        const laenge = z2 - z1;
+        const traegerGeometrie = new THREE.BoxGeometry(0.1, 0.1, laenge);
+        const traegerObjekt = new THREE.Mesh(traegerGeometrie, materialTragwerk);
+        traegerObjekt.position.set(x, y, (z1 + z2) / 2);
+        konfiguratorGruppe.add(traegerObjekt);
+        traeger.push(traegerObjekt);
+      }
     }
   }
 
-  // Deckenplatten
-  for (let i = 0; i < xCount - 1; i++) {
-    for (let j = 0; j < zCount - 1; j++) {
-      const x1 = breite / 2 - (xCount - 1) * rastert / 2 + i * rastert;
-      const x2 = breite / 2 - (xCount - 1) * rastert / 2 + (i + 1) * rastert;
-      const z1 = tiefe / 2 - (zCount - 1) * rastert / 2 + j * rastert;
-      const z2 = tiefe / 2 - (zCount - 1) * rastert / 2 + (j + 1) * rastert;
-      const decke = new THREE.Mesh(
-        new THREE.BoxGeometry(x2 - x1, 0.1, z2 - z1),
-        deckenMaterial
-      );
-      decke.position.set((x1 + x2) / 2, stuetzenHoehe, (z1 + z2) / 2);
-      konfiguratorGruppe.add(decke);
+  for (let k = 0; k < geschosszahl; k++) {
+    const y = k * geschossHoehe + geschossHoehe / 2;
+    const deckenGeometrie = new THREE.BoxGeometry(breite, 0.1, tiefe);
+    const deckenMaterial = k === 0 ? new THREE.MeshStandardMaterial({ color: 0x90EE90, roughness: 0.5 }) : new THREE.MeshStandardMaterial({ color: 0xD3D3D3, roughness: 0.6 });
+    const decken = new THREE.Mesh(deckenGeometrie, deckenMaterial);
+    decken.position.set(0, y, 0);
+    konfiguratorGruppe.add(decken);
+  }
+
+  const fensterGeometrie = new THREE.BoxGeometry(0.8, 1.0, 0.05);
+  const fensterMaterial = new THREE.MeshStandardMaterial({ color: 0xADD8E6, roughness: 0.3 });
+  const fensterRahmen = new THREE.BoxGeometry(0.05, 1.0, 0.05);
+  const rahmenMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+
+  const balkonTiefe = 0.8;
+  const balkonGeometrie = new THREE.BoxGeometry(balkonTiefe, 0.1, 0.8);
+  const balkonMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.7 });
+
+  const fassadenZ = [-tiefe / 2, tiefe / 2];
+
+  for (let z of fassadenZ) {
+    const zPos = z;
+    const istHoffassade = z === tiefe / 2;
+
+    for (let i = 0; i < rastervorlageBreite.length; i++) {
+      const x = rastervorlageBreite[i] - breite / 2;
+
+      for (let k = 1; k < geschosszahl; k++) {
+        const y = k * geschossHoehe + geschossHoehe / 2;
+        const balkonX = x;
+        const balkonZ = zPos + (istHoffassade ? -0.4 : 0.4);
+        const balkon = new THREE.Mesh(balkonGeometrie, balkonMaterial);
+        balkon.position.set(balkonX, y, balkonZ);
+        konfiguratorGruppe.add(balkon);
+      }
+
+      for (let k = 0; k < geschosszahl; k++) {
+        const y = k * geschossHoehe + geschossHoehe / 2;
+        const istErdgeschoss = k === 0;
+        const istStraßenfassade = z === -tiefe / 2;
+
+        if (istStraßenfassade || istHoffassade) {
+          if (istErdgeschoss) {
+            const fenster = new THREE.Mesh(fensterGeometrie, fensterMaterial);
+            fenster.position.set(x, y, zPos);
+            konfiguratorGruppe.add(fenster);
+
+            const rahmen = new THREE.Mesh(fensterRahmen, rahmenMaterial);
+            rahmen.position.set(x, y, zPos);
+            konfiguratorGruppe.add(rahmen);
+          } else {
+            const fenster = new THREE.Mesh(fensterGeometrie, fensterMaterial);
+            fenster.position.set(x, y, zPos);
+            konfiguratorGruppe.add(fenster);
+
+            const rahmen = new THREE.Mesh(fensterRahmen, rahmenMaterial);
+            rahmen.position.set(x, y, zPos);
+            konfiguratorGruppe.add(rahmen);
+          }
+        }
+      }
     }
   }
 
-  // Fassadenmodule (Straßenfassade)
-  for (let i = 0; i < 5; i++) {
-    const x = breite / 2 - 10 + i * 4;
-    const fassade = new THREE.Mesh(
-      new THREE.PlaneGeometry(4, traufhoehe),
-      fassadenMaterial
-    );
-    fassade.position.set(x, traufhoehe / 2, tiefe / 2);
-    fassade.rotation.y = Math.PI / 2;
-    konfiguratorGruppe.add(fassade);
-  }
-
-  // Fenster (nur auf Straßenfassade)
-  const fensterGeo = new THREE.BoxGeometry(1, 1.5, 0.1);
-  const fensterCount = Math.floor(0.4 * 25);
-  for (let i = 0; i < fensterCount; i++) {
-    const x = breite / 2 - 10 + Math.random() * 20;
-    const z = tiefe / 2;
-    const fenster = new THREE.Mesh(fensterGeo, fensterMaterial);
-    fenster.position.set(x, traufhoehe / 2, z);
-    fenster.rotation.y = Math.PI / 2;
-    konfiguratorGruppe.add(fenster);
-  }
-
-  // Balkone (nur auf Straßenfassade)
-  const balkonGeo = new THREE.BoxGeometry(2, 0.1, 1.5);
-  const balkonCount = Math.floor(1.5 * 2);
-  for (let i = 0; i < balkonCount; i++) {
-    const x = breite / 2 - (2 / 2) + Math.random() * (breite - 2);
-    const z = tiefe / 2;
-    const balkon = new THREE.Mesh(balkonGeo, balkonMaterial);
-    balkon.position.set(x, traufhoehe - 0.1, z);
-    konfiguratorGruppe.add(balkon);
-  }
+  auswertungPanel.innerHTML = `
+    <h3>Ergebnisse</h3>
+    <p><strong>Geschosszahl:</strong> ${geschosszahl}</p>
+    <p><strong>BRI:</strong> ${bri.toFixed(2)}</p>
+    <p><strong>BGF:</strong> ${bgf.toFixed(2)} m²</p>
+    <p><strong>Grundfläche:</strong> ${grundflaeche.toFixed(2)} m²</p>
+    <p><strong>GRZ:</strong> ${grz.toFixed(2)}</p>
+    <p><strong>GFZ:</strong> ${gfz.toFixed(2)}</p>
+    <p><strong>A/V-Verhältnis:</strong> ${avVerhaeltnis.toFixed(2)}</p>
+    <p><strong>CO₂-Emissionen:</strong> ca. ${geschätzteCo2.toFixed(0)} kg (geschätzt)</p>
+    <p><strong>Kosten:</strong> ca. ${geschätzteKosten.toFixed(0)} € (geschätzt)</p>
+    <p><strong>Tragwerksraster:</strong> ${rastertyp} (${rastertiefe} m)</p>
+    <p><strong>Material:</strong> ${materialTyp}</p>
+    <p><strong>Eigenes Kriterium:</strong> ${eigenesKriterium().ergebnis}</p>
+  `;
 }
 // ==================================================================
 //  === ENDE IHR KONFIGURATOR ===
@@ -433,36 +509,24 @@ function buildKonfigurator() {
 //               breite, tiefe, traufe sowie gruppe (konfiguratorGruppe).
 // ==================================================================
 function eigenesKriterium(ctx) {
-  const { BRI, BGF, GRF, geschosse, GRZ, GFZ, AV, A, breite, tiefe, traufe, gruppe } = ctx;
+  const { breite, tiefe, geschosse, traufe, gruppe } = ctx;
 
-  // Neues Kriterium: Besonnungsgrad der Wohnflächen
-  // Begründung: Misst, wie viel der Wohnfläche in besonnten Zellen liegt.
-  // Reagiert auf Geometrie, Sonnenstand, Fensterposition.
+  const fensteranordnung = document.getElementById('fensteranordnung').value;
+  const fensterbreite = parseFloat(document.getElementById('fensterbreite').value);
+  const fensterhoehe = parseFloat(document.getElementById('fensterhoehe').value);
+  const balkon = document.getElementById('balkon').checked;
 
-  const zellen = [];
-  const zellenX = 5, zellenY = 5;
-  const dx = breite / zellenX, dy = tiefe / zellenY;
+  const fensterFlaeche = berechneFensterFlaeche(
+    breite, tiefe, geschosse, 5.0, fensteranordnung, fensterbreite, fensterhoehe, balkon
+  );
 
-  for (let i = 0; i < zellenX; i++) {
-    for (let j = 0; j < zellenY; j++) {
-      const x = -breite / 2 + (i + 0.5) * dx;
-      const y = -tiefe / 2 + (j + 0.5) * dy;
-      const sonnenstunden = Math.max(0, 4 + (y * 0.2) + (traufe - 4) * 0.5);
-      zellen.push({
-        x, y,
-        flaeche: dx * dy,
-        sonnenstunden
-      });
-    }
-  }
+  const fassadenFlaeche = berechneFassadenFlaeche(breite, tiefe, geschosse, traufe, document.getElementById('dachform').value, document.getElementById('dachneigung').value);
 
-  const totalFlaeche = zellen.reduce((sum, z) => sum + z.flaeche, 0);
-  const besonneneFlaeche = zellen.filter(z => z.sonnenstunden >= 4).reduce((sum, z) => sum + z.flaeche, 0);
-  const besonnungsgrad = totalFlaeche > 0 ? (besonneneFlaeche / totalFlaeche) * 100 : 0;
+  const oeffnungsanteil = fassadenFlaeche > 0 ? (fensterFlaeche / fassadenFlaeche) * 100 : 0;
 
   return {
-    label: "Besonnungsgrad der Wohnflächen",
-    wert: besonnungsgrad,
+    label: "Öffnungsanteil der Hauptfassaden",
+    wert: oeffnungsanteil,
     einheit: "%"
   };
 }
