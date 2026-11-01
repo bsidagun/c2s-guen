@@ -900,15 +900,15 @@ function buildKontext() {
     <button id="export-gltf">Export als glTF</button>
   </div>
 
-  <!-- Three.js CDN (feste Version) -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/examples/js/loaders/OBJLoader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/examples/js/exporters/OBJExporter.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/examples/js/exporters/GLTFExporter.js"></script>
+  <!-- ✅ Moderner Three.js ESM-Import (r157+) -->
+  <script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/controls/OrbitControls.js';
+    import { OBJLoader } from 'https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/loaders/OBJLoader.js';
+    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/loaders/GLTFLoader.js';
+    import { OBJExporter } from 'https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/exporters/OBJExporter.js';
+    import { GLTFExporter } from 'https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/exporters/GLTFExporter.js';
 
-  <script>
     // === Vorbereitung: Scene, Camera, Renderer ===
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x88aaff);
@@ -922,7 +922,7 @@ function buildKontext() {
     renderer.setPixelRatio(window.devicePixelRatio);
     document.getElementById('container').appendChild(renderer.domElement);
 
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
 
@@ -1087,7 +1087,6 @@ function buildKontext() {
         A: 0
       };
 
-      // Berechne Hüllfläche A
       const wandFlaeche = 2 * (breite * traufhoehe) + 2 * (tiefe * traufhoehe);
       const dachFlaeche = 2 * (breite * (tiefe / 2));
       ctx.A = wandFlaeche + dachFlaeche;
@@ -1162,7 +1161,7 @@ function buildKontext() {
 
     // === Exportfunktionen ===
     document.getElementById('export-obj').addEventListener('click', () => {
-      const exporter = new THREE.OBJExporter();
+      const exporter = new OBJExporter();
       const result = exporter.parse(konfiguratorGruppe);
       const blob = new Blob([result], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -1173,7 +1172,7 @@ function buildKontext() {
     });
 
     document.getElementById('export-gltf').addEventListener('click', () => {
-      const exporter = new THREE.GLTFExporter();
+      const exporter = new GLTFExporter();
       exporter.parse(konfiguratorGruppe, (gltf) => {
         const blob = new Blob([JSON.stringify(gltf)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
