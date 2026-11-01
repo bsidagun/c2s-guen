@@ -310,6 +310,9 @@ function buildKonfigurator() {
     groß: 7.5
   };
 
+  // Define materialStahlbeton inside the function
+  const materialStahlbeton = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, roughness: 0.6, metalness: 0.2 });
+
   const breite = parseFloat(document.getElementById('breite').value);
   const tiefe = parseFloat(document.getElementById('tiefe').value);
   const hoehe = parseFloat(document.getElementById('traufe').value);
@@ -319,8 +322,8 @@ function buildKonfigurator() {
 
   let materialTragwerk;
   switch (materialTyp) {
-    case 'holz': materialTragwerk = materialHolz; break;
-    case 'stahl': materialTragwerk = materialStahl; break;
+    case 'holz': materialTragwerk = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.7, metalness: 0.1 }); break;
+    case 'stahl': materialTragwerk = new THREE.MeshStandardMaterial({ color: 0x808080, roughness: 0.4, metalness: 0.9 }); break;
     case 'stahlbeton': materialTragwerk = materialStahlbeton; break;
     default: materialTragwerk = materialStahlbeton;
   }
