@@ -490,37 +490,37 @@ function buildKonfigurator() {
   });
 
   const zellenX = 5, zellenY = 5;
-  const zelleWidth = breite / zellenX;
-  const zelleDepth = tiefe / zellenY;
+const zelleWidth = breite / zellenX;
+const zelleDepth = tiefe / zellenY;
 
-  for (let i = 0; i < zellenX; i++) {
-    for (let j = 0; j < zellenY; j++) {
-      const x = breite / 2 - (zellenX - 1) * zelleWidth / 2 + i * zelleWidth;
-      const z = tiefe / 2 - (zellenY - 1) * zelleDepth / 2 + j * zelleDepth;
-      const zelle = new THREE.Mesh(
-        new THREE.PlaneGeometry(zelleWidth, zelleDepth),
-        new THREE.MeshStandardMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.3 })
-      );
-      zelle.position.set(x, 0, z);
-      zelle.rotation.x = -Math.PI / 2;
-      konfiguratorGruppe.add(zelle);
+for (let i = 0; i < zellenX; i++) {
+  for (let j = 0; j < zellenY; j++) {
+    const x = breite / 2 - (zellenX - 1) * zelleWidth / 2 + i * zelleWidth;
+    const z1 = tiefe / 2 - (zellenY - 1) * zelleDepth / 2 + j * zelleDepth;
+    const zelle = new THREE.Mesh(
+      new THREE.PlaneGeometry(zelleWidth, zelleDepth),
+      new THREE.MeshStandardMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.3 })
+    );
+    zelle.position.set(x, 0, z1);
+    zelle.rotation.x = -Math.PI / 2;
+    konfiguratorGruppe.add(zelle);
 
-      let zonenName = "Nebenräume";
-      if (i === 0 || j === 0 || i === zellenX - 1 || j === zellenY - 1) {
-        zonenName = "Verkehrsflächen";
-      } else if (i === 2 && j === 2) {
-        zonenName = "Gemeinschaftsbereiche";
-      } else if (i === 1 && j === 1) {
-        zonenName = "Wohnbereich";
-      }
+    let zonenName = "Nebenräume";
+    if (i === 0 || j === 0 || i === zellenX - 1 || j === zellenY - 1) {
+      zonenName = "Verkehrsflächen";
+    } else if (i === 2 && j === 2) {
+      zonenName = "Gemeinschaftsbereiche";
+    } else if (i === 1 && j === 1) {
+      zonenName = "Wohnbereich";
+    }
 
-      const z = zonen.find(z => z.name === zonenName);
-      if (z) {
-        zelle.material.color.setHex(z.color);
-        zelle.material.opacity = 0.7;
-      }
+    const z = zonen.find(z => z.name === zonenName);
+    if (z) {
+      zelle.material.color.setHex(z.color);
+      zelle.material.opacity = 0.7;
     }
   }
+}
 
   // ✅ Add null check before setting innerHTML
   if (auswertungPanel) {
