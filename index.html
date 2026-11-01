@@ -521,7 +521,7 @@ function buildKonfigurator() {
 //  ctx enthält: BRI, BGF, GRF, geschosse, GRZ, GFZ, AV, A (Hüllfläche),
 //               breite, tiefe, traufe sowie gruppe (konfiguratorGruppe).
 // ==================================================================
-function eigenesKriterium(ctx) {
+function eigenesKriterium(ctx = {}) {
   const { breite, tiefe, geschosse, traufe, gruppe } = ctx;
 
   const fensteranordnung = document.getElementById('fensteranordnung').value;
