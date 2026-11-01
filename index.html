@@ -309,8 +309,8 @@ function buildKonfigurator() {
   // Define rasterOptionen inside the function
   const rasterOptionen = {
     klein: 2.5,
-    mittler: 5.0,
-    groß: 7.5
+    mittler: 3.0,
+    groß: 3.5
   };
 
   // Define materialStahlbeton inside the function
@@ -630,7 +630,7 @@ function eigenesKriterium(ctx = {}) {
   const oeffnungsanteil = fassadenFlaeche > 0 ? (fensterFlaeche / fassadenFlaeche) * 100 : 0;
 
   return {
-    label: "Öffnungsanteil der Hauptfassaden",
+    label: "Window-to-Facade Ratio",
     wert: oeffnungsanteil,
     einheit: "%"
   };
