@@ -303,9 +303,9 @@ function buildKontext() {
 function buildKonfigurator() {
   konfiguratorGruppe.clear();
 
-  const breite = grundstuecksBreite.value;
-  const tiefe = grundstuecksTiefe.value;
-  const hoehe = traufhoehe.value;
+  const breite = parseFloat(document.getElementById('breite').value);
+  const tiefe = parseFloat(document.getElementById('tiefe').value);
+  const hoehe = parseFloat(document.getElementById('traufe').value);
   const rastertyp = aktuellesRaster;
   const rastertiefe = rasterOptionen[rastertyp];
   const materialTyp = document.querySelector('input[name="material"]:checked')?.value || 'stahlbeton';
