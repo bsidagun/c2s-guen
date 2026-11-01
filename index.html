@@ -1063,8 +1063,13 @@ function buildKontext() {
       traufhoeheVal.textContent = traufhoehe.toFixed(1);
       sonnenstundenVal.textContent = sonnenstundenSlider.value;
 
+      // ✅ Korrekt: Box3Helper hat keine update()-Methode
+      // Stattdessen: Box3Helper.update() ist nicht Teil der API
+      // → Wir aktualisieren die Box3Helper-Geometrie direkt
       envelopeBox.setFromCenterAndSize(new THREE.Vector3(0, 0, 0), new THREE.Vector3(breite, traufhoehe, tiefe));
-      envelopeHelper.update();
+      envelopeHelper.geometry.dispose();
+      envelopeHelper.geometry = new THREE.BoxGeometry(breite, traufhoehe, tiefe);
+      envelopeHelper.position.set(0, traufhoehe / 2, 0);
 
       const zellen = berechneSonnenstunden(breite, tiefe);
       const nutzungsdaten = berechneNutzungsverteilung(breite, tiefe, traufhoehe);
