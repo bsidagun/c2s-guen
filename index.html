@@ -313,6 +313,9 @@ function buildKonfigurator() {
   // Define materialStahlbeton inside the function
   const materialStahlbeton = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, roughness: 0.6, metalness: 0.2 });
 
+  // Define auswertungPanel inside the function
+  const auswertungPanel = document.getElementById('auswertung');
+
   const breite = parseFloat(document.getElementById('breite').value);
   const tiefe = parseFloat(document.getElementById('tiefe').value);
   const hoehe = parseFloat(document.getElementById('traufe').value);
