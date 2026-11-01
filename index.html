@@ -300,18 +300,986 @@ function buildKontext() {
 //
 //  Das Folgende ist nur ein PLATZHALTER – bitte ersetzen.
 // ==================================================================
-function buildKonfigurator() {
-  konfiguratorGruppe.clear();
-  const { breite, tiefe, traufe } = P;
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parametrischer Gebäude-Konfigurator</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+            font-size: 14px;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            z-index: 100;
+            width: 320px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        #controls label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        #controls input, #controls select {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        #stats {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+            font-size: 12px;
+            max-width: 300px;
+        }
+        #exportButtons {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            z-index: 100;
+        }
+        #exportButtons button {
+            margin: 5px;
+            padding: 8px 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #exportButtons button:hover {
+            background: #45a049;
+        }
+        .slider-value {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        .section {
+            border-top: 1px solid #555;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+        .section h4 {
+            margin: 5px 0;
+            color: #4CAF50;
+        }
+        .checkbox-group {
+            margin: 5px 0;
+        }
+        .checkbox-group label {
+            display: inline;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h3>Parametrischer Gebäude-Konfigurator</h3>
+        <p>Blockrandbebauung mit modularem Tragwerk</p>
+    </div>
+    
+    <div id="controls">
+        <h3>Konfiguration</h3>
+        
+        <div class="section">
+            <h4>Material & Raster</h4>
+            <label>Material:
+                <select id="material">
+                    <option value="holz">Holz</option>
+                    <option value="stahl">Stahl</option>
+                    <option value="beton">Beton</option>
+                </select>
+            </label>
+            
+            <label>Raster:
+                <select id="raster">
+                    <option value="klein">Klein</option>
+                    <option value="mittel" selected>Mittel</option>
+                    <option value="gross">Groß</option>
+                </select>
+            </label>
+        </div>
+        
+        <div class="section">
+            <h4>Gebäudegeometrie</h4>
+            <label>Gebäudebreite (m): 
+                <input type="range" id="breite" min="8" max="20" value="14" step="0.5">
+                <span class="slider-value" id="breiteValue">14</span>
+            </label>
+            
+            <label>Gebäudetiefe (m): 
+                <input type="range" id="tiefe" min="8" max="16" value="12" step="0.5">
+                <span class="slider-value" id="tiefeValue">12</span>
+            </label>
+            
+            <label>Traufhöhe (m): 
+                <input type="range" id="hoehe" min="6" max="15" value="10" step="0.5">
+                <span class="slider-value" id="hoeheValue">10</span>
+            </label>
+        </div>
+        
+        <div class="section">
+            <h4>Fassade & Fenster</h4>
+            <label>Fensterflächenanteil (%): 
+                <input type="range" id="fensteranteil" min="20" max="80" value="50" step="5">
+                <span class="slider-value" id="fensteranteilValue">50</span>
+            </label>
+            
+            <label>Fensterbreite (m): 
+                <input type="range" id="fensterbreite" min="0.5" max="2" value="1.2" step="0.1">
+                <span class="slider-value" id="fensterbreiteValue">1.2</span>
+            </label>
+        </div>
+        
+        <div class="section">
+            <h4>Balkone</h4>
+            <label>Anzahl Balkone:
+                <input type="range" id="balkone" min="0" max="4" value="2" step="1">
+                <span class="slider-value" id="balkoneValue">2</span>
+            </label>
+            
+            <label>Balkonbreite (m): 
+                <input type="range" id="balkonbreite" min="1" max="4" value="2.5" step="0.5">
+                <span class="slider-value" id="balkonbreiteValue">2.5</span>
+            </label>
+            
+            <label>Balkontiefe (m): 
+                <input type="range" id="balkontiefe" min="1" max="3" value="1.5" step="0.5">
+                <span class="slider-value" id="balkontiefeValue">1.5</span>
+            </label>
+            
+            <div class="checkbox-group">
+                <label><input type="checkbox" id="balkonStrasse" checked> Straßenseite</label>
+                <label><input type="checkbox" id="balkonHof"> Hoffassade</label>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h4>Nutzungszonen (m²)</h4>
+            <label>Wohnbereich: 
+                <input type="range" id="wohnbereich" min="20" max="100" value="60" step="5">
+                <span class="slider-value" id="wohnbereichValue">60</span>
+            </label>
+            
+            <label>Private Bereiche: 
+                <input type="range" id="privatbereich" min="10" max="50" value="25" step="5">
+                <span class="slider-value" id="privatbereichValue">25</span>
+            </label>
+            
+            <label>Gemeinschaftsbereiche: 
+                <input type="range" id="gemeinschaft" min="10" max="40" value="20" step="5">
+                <span class="slider-value" id="gemeinschaftValue">20</span>
+            </label>
+            
+            <label>Nebenräume: 
+                <input type="range" id="nebenraeume" min="5" max="30" value="15" step="5">
+                <span class="slider-value" id="nebenraeumeValue">15</span>
+            </label>
+            
+            <label>Max. Verkehrsfläche (%): 
+                <input type="range" id="verkehrsflaeche" min="10" max="30" value="20" step="5">
+                <span class="slider-value" id="verkehrsflaecheValue">20</span>
+            </label>
+        </div>
+    </div>
+    
+    <div id="stats">
+        <h4>Statistik & Auswertung</h4>
+        <div id="statsContent"></div>
+    </div>
+    
+    <div id="exportButtons">
+        <button onclick="exportOBJ()">Export OBJ</button>
+        <button onclick="exportGLTF()">Export glTF</button>
+    </div>
 
-  // PLATZHALTER: ein einzelner Baukörper, der das Volumen füllt. ERSETZEN!
-  const platzhalter = new THREE.Mesh(
-    new THREE.BoxGeometry(breite * 0.96, traufe, tiefe * 0.96),
-    new THREE.MeshStandardMaterial({ color: 0x9aa7ff, roughness: 0.7 })
-  );
-  platzhalter.position.set(0, traufe / 2, tiefe / 2);
-  konfiguratorGruppe.add(platzhalter);
-}
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+        import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(25, 20, 25);
+        camera.lookAt(0, 5, 0);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.25;
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(10, 20, 10);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+        
+        const hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.5);
+        scene.add(hemisphereLight);
+        
+        // Ground
+        const groundGeometry = new THREE.PlaneGeometry(50, 50);
+        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, side: THREE.DoubleSide });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.01;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // Grid helper
+        const gridHelper = new THREE.GridHelper(50, 50, 0x888888, 0xcccccc);
+        scene.add(gridHelper);
+        
+        // Konfigurator Gruppe
+        const konfiguratorGruppe = new THREE.Group();
+        scene.add(konfiguratorGruppe);
+        
+        // Parameter
+        let params = {
+            material: 'holz',
+            raster: 'mittel',
+            breite: 14,
+            tiefe: 12,
+            hoehe: 10,
+            fensteranteil: 50,
+            fensterbreite: 1.2,
+            balkone: 2,
+            balkonbreite: 2.5,
+            balkontiefe: 1.5,
+            balkonStrasse: true,
+            balkonHof: false,
+            wohnbereich: 60,
+            privatbereich: 25,
+            gemeinschaft: 20,
+            nebenraeume: 15,
+            verkehrsflaeche: 20
+        };
+        
+        // Material-spezifische Parameter
+        const materialParams = {
+            holz: {
+                rasterweiten: { klein: 3.0, mittel: 4.0, gross: 5.0 },
+                stuetzen: { breite: 0.2, tiefe: 0.2 },
+                traeger: { breite: 0.2, hoehe: 0.3 },
+                decke: { dicke: 0.2 },
+                farbe: 0x8B4513,
+                kosten: 1800,
+                co2: 150
+            },
+            stahl: {
+                rasterweiten: { klein: 4.0, mittel: 5.0, gross: 6.0 },
+                stuetzen: { breite: 0.15, tiefe: 0.15 },
+                traeger: { breite: 0.15, hoehe: 0.25 },
+                decke: { dicke: 0.15 },
+                farbe: 0x708090,
+                kosten: 2200,
+                co2: 350
+            },
+            beton: {
+                rasterweiten: { klein: 3.5, mittel: 4.5, gross: 5.5 },
+                stuetzen: { breite: 0.3, tiefe: 0.3 },
+                traeger: { breite: 0.3, hoehe: 0.4 },
+                decke: { dicke: 0.25 },
+                farbe: 0x808080,
+                kosten: 1600,
+                co2: 400
+            }
+        };
+        
+        // Sonnenstunden-Analyse (vereinfacht)
+        function calculateSunHours(x, z, breite, tiefe) {
+            // Vereinfachte Berechnung: mehr Sonne an Südseite (positive Z)
+            const normalizedZ = (z + tiefe/2) / tiefe;
+            const normalizedX = (x + breite/2) / breite;
+            
+            // Grundwert basierend auf Position
+            let sunHours = 4 + normalizedZ * 4; // 4-8 Stunden
+            sunHours += Math.sin(normalizedX * Math.PI) * 1.5; // Randbereiche etwas weniger
+            
+            return Math.max(2, Math.min(10, sunHours));
+        }
+        
+        // Funktion zum Erstellen des Gebäudes
+        function buildKonfigurator() {
+            // Clear existing
+            while (konfiguratorGruppe.children.length > 0) {
+                konfiguratorGruppe.remove(konfiguratorGruppe.children[0]);
+            }
+            
+            const matParams = materialParams[params.material];
+            const rasterweite = matParams.rasterweiten[params.raster];
+            
+            // Berechne Anzahl der Rasterfelder
+            const anzahlX = Math.floor(params.breite / rasterweite);
+            const anzahlZ = Math.floor(params.tiefe / rasterweite);
+            const effektiveBreite = anzahlX * rasterweite;
+            const effektiveTiefe = anzahlZ * rasterweite;
+            
+            // Berechne Geschosszahl basierend auf Höhe
+            const geschosshoehe = 3.0;
+            const anzahlGeschosse = Math.max(1, Math.floor(params.hoehe / geschosshoehe));
+            const effektiveHoehe = anzahlGeschosse * geschosshoehe;
+            
+            // Materialien
+            const stuetzenMaterial = new THREE.MeshStandardMaterial({ 
+                color: matParams.farbe, 
+                roughness: 0.7 
+            });
+            const traegerMaterial = new THREE.MeshStandardMaterial({ 
+                color: matParams.farbe, 
+                roughness: 0.7 
+            });
+            const deckeMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xCCCCCC, 
+                roughness: 0.5 
+            });
+            const fassadeMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xE8E8E8, 
+                roughness: 0.3 
+            });
+            const fensterMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x87CEEB, 
+                transparent: true, 
+                opacity: 0.7 
+            });
+            const balkonMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xA0522D, 
+                roughness: 0.6 
+            });
+            const wandMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xCCCCCC, 
+                roughness: 0.8 
+            });
+            
+            // Positionierung
+            const offsetX = -effektiveBreite / 2;
+            const offsetZ = -effektiveTiefe / 2;
+            
+            // Stützen erstellen
+            for (let i = 0; i <= anzahlX; i++) {
+                for (let j = 0; j <= anzahlZ; j++) {
+                    for (let k = 0; k < anzahlGeschosse; k++) {
+                        const stuetze = new THREE.Mesh(
+                            new THREE.BoxGeometry(matParams.stuetzen.breite, geschosshoehe, matParams.stuetzen.tiefe),
+                            stuetzenMaterial
+                        );
+                        stuetze.position.set(
+                            offsetX + i * rasterweite,
+                            k * geschosshoehe + geschosshoehe / 2,
+                            offsetZ + j * rasterweite
+                        );
+                        stuetze.castShadow = true;
+                        konfiguratorGruppe.add(stuetze);
+                    }
+                }
+            }
+            
+            // Träger erstellen (X-Richtung)
+            for (let i = 0; i <= anzahlX; i++) {
+                for (let j = 0; j < anzahlZ; j++) {
+                    for (let k = 0; k < anzahlGeschosse; k++) {
+                        const traeger = new THREE.Mesh(
+                            new THREE.BoxGeometry(rasterweite, matParams.traeger.hoehe, matParams.traeger.breite),
+                            traegerMaterial
+                        );
+                        traeger.position.set(
+                            offsetX + i * rasterweite,
+                            k * geschosshoehe + geschosshoehe - matParams.traeger.hoehe / 2,
+                            offsetZ + j * rasterweite + rasterweite / 2
+                        );
+                        traeger.castShadow = true;
+                        konfiguratorGruppe.add(traeger);
+                    }
+                }
+            }
+            
+            // Träger erstellen (Z-Richtung)
+            for (let i = 0; i < anzahlX; i++) {
+                for (let j = 0; j <= anzahlZ; j++) {
+                    for (let k = 0; k < anzahlGeschosse; k++) {
+                        const traeger = new THREE.Mesh(
+                            new THREE.BoxGeometry(matParams.traeger.breite, matParams.traeger.hoehe, rasterweite),
+                            traegerMaterial
+                        );
+                        traeger.position.set(
+                            offsetX + i * rasterweite + rasterweite / 2,
+                            k * geschosshoehe + geschosshoehe - matParams.traeger.hoehe / 2,
+                            offsetZ + j * rasterweite
+                        );
+                        traeger.castShadow = true;
+                        konfiguratorGruppe.add(traeger);
+                    }
+                }
+            }
+            
+            // Deckenmodule erstellen
+            for (let i = 0; i < anzahlX; i++) {
+                for (let j = 0; j < anzahlZ; j++) {
+                    for (let k = 0; k < anzahlGeschosse; k++) {
+                        const decke = new THREE.Mesh(
+                            new THREE.BoxGeometry(rasterweite - 0.1, matParams.decke.dicke, rasterweite - 0.1),
+                            deckeMaterial
+                        );
+                        decke.position.set(
+                            offsetX + i * rasterweite + rasterweite / 2,
+                            k * geschosshoehe + geschosshoehe - matParams.decke.dicke / 2,
+                            offsetZ + j * rasterweite + rasterweite / 2
+                        );
+                        decke.receiveShadow = true;
+                        konfiguratorGruppe.add(decke);
+                    }
+                }
+            }
+            
+            // Fassade erstellen (Straßenseite - positive Z)
+            const fassadeHoehe = effektiveHoehe;
+            const fassadeBreite = effektiveBreite;
+            
+            // Fassadenmodule für Straßenseite
+            const modulBreite = rasterweite / 2;
+            const anzahlModule = Math.floor(fassadeBreite / modulBreite);
+            const fensterFlaeche = params.fensteranteil / 100;
+            
+            for (let i = 0; i < anzahlModule; i++) {
+                for (let k = 0; k < anzahlGeschosse; k++) {
+                    // Entscheide ob Fenster oder Wand basierend auf Fensteranteil
+                    const isFenster = (i % 2 === 0) && (Math.random() < fensterFlaeche);
+                    
+                    if (isFenster) {
+                        // Fenstermodul
+                        const fenster = new THREE.Mesh(
+                            new THREE.BoxGeometry(params.fensterbreite, geschosshoehe - 0.5, 0.1),
+                            fensterMaterial
+                        );
+                        fenster.position.set(
+                            offsetX + i * modulBreite + modulBreite / 2,
+                            k * geschosshoehe + geschosshoehe / 2,
+                            offsetZ + effektiveTiefe
+                        );
+                        konfiguratorGruppe.add(fenster);
+                    } else {
+                        // Wandmodul
+                        const wand = new THREE.Mesh(
+                            new THREE.BoxGeometry(modulBreite - 0.2, geschosshoehe - 0.5, 0.1),
+                            fassadeMaterial
+                        );
+                        wand.position.set(
+                            offsetX + i * modulBreite + modulBreite / 2,
+                            k * geschosshoehe + geschosshoehe / 2,
+                            offsetZ + effektiveTiefe
+                        );
+                        konfiguratorGruppe.add(wand);
+                    }
+                }
+            }
+            
+            // Fassade für Hoffassade (negative Z)
+            for (let i = 0; i < anzahlModule; i++) {
+                for (let k = 0; k < anzahlGeschosse; k++) {
+                    const isFenster = (i % 2 === 1) && (Math.random() < fensterFlaeche);
+                    
+                    if (isFenster) {
+                        const fenster = new THREE.Mesh(
+                            new THREE.BoxGeometry(params.fensterbreite, geschosshoehe - 0.5, 0.1),
+                            fensterMaterial
+                        );
+                        fenster.position.set(
+                            offsetX + i * modulBreite + modulBreite / 2,
+                            k * geschosshoehe + geschosshoehe / 2,
+                            offsetZ
+                        );
+                        konfiguratorGruppe.add(fenster);
+                    } else {
+                        const wand = new THREE.Mesh(
+                            new THREE.BoxGeometry(modulBreite - 0.2, geschosshoehe - 0.5, 0.1),
+                            fassadeMaterial
+                        );
+                        wand.position.set(
+                            offsetX + i * modulBreite + modulBreite / 2,
+                            k * geschosshoehe + geschosshoehe / 2,
+                            offsetZ
+                        );
+                        konfiguratorGruppe.add(wand);
+                    }
+                }
+            }
+            
+            // Balkone erstellen
+            const balkonBreite = params.balkonbreite;
+            const balkonTiefe = params.balkontiefe;
+            
+            // Balkone an Straßenseite
+            if (params.balkonStrasse) {
+                for (let b = 0; b < params.balkone; b++) {
+                    const balkonPosition = offsetX + (b + 0.5) * (effektiveBreite / params.balkone);
+                    const geschoss = Math.floor((b * 2) % anzahlGeschosse);
+                    
+                    // Balkonplatte
+                    const balkonPlatte = new THREE.Mesh(
+                        new THREE.BoxGeometry(balkonBreite - 0.2, 0.1, balkonTiefe),
+                        balkonMaterial
+                    );
+                    balkonPlatte.position.set(
+                        balkonPosition,
+                        geschoss * geschosshoehe + geschosshoehe - 0.1,
+                        offsetZ + effektiveTiefe + balkonTiefe / 2
+                    );
+                    konfiguratorGruppe.add(balkonPlatte);
+                    
+                    // Balkongeländer
+                    const gelaenderMaterial = new THREE.MeshStandardMaterial({ 
+                        color: 0x333333, 
+                        metalness: 0.5 
+                    });
+                    
+                    for (let g = 0; g < 3; g++) {
+                        const gelaender = new THREE.Mesh(
+                            new THREE.BoxGeometry(balkonBreite - 0.2, 1.0, 0.05),
+                            gelaenderMaterial
+                        );
+                        gelaender.position.set(
+                            balkonPosition,
+                            geschoss * geschosshoehe + geschosshoehe + 0.5,
+                            offsetZ + effektiveTiefe + balkonTiefe - 0.025
+                        );
+                        konfiguratorGruppe.add(gelaender);
+                    }
+                }
+            }
+            
+            // Balkone an Hoffassade
+            if (params.balkonHof) {
+                for (let b = 0; b < params.balkone; b++) {
+                    const balkonPosition = offsetX + (b + 0.5) * (effektiveBreite / params.balkone);
+                    const geschoss = Math.floor((b * 2 + 1) % anzahlGeschosse);
+                    
+                    const balkonPlatte = new THREE.Mesh(
+                        new THREE.BoxGeometry(balkonBreite - 0.2, 0.1, balkonTiefe),
+                        balkonMaterial
+                    );
+                    balkonPlatte.position.set(
+                        balkonPosition,
+                        geschoss * geschosshoehe + geschosshoehe - 0.1,
+                        offsetZ - balkonTiefe / 2
+                    );
+                    konfiguratorGruppe.add(balkonPlatte);
+                    
+                    const gelaenderMaterial = new THREE.MeshStandardMaterial({ 
+                        color: 0x333333, 
+                        metalness: 0.5 
+                    });
+                    
+                    for (let g = 0; g < 3; g++) {
+                        const gelaender = new THREE.Mesh(
+                            new THREE.BoxGeometry(balkonBreite - 0.2, 1.0, 0.05),
+                            gelaenderMaterial
+                        );
+                        gelaender.position.set(
+                            balkonPosition,
+                            geschoss * geschosshoehe + geschosshoehe + 0.5,
+                            offsetZ - 0.025
+                        );
+                        konfiguratorGruppe.add(gelaender);
+                    }
+                }
+            }
+            
+            // Brandwände (seitlich)
+            const brandwandMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x666666, 
+                roughness: 0.8 
+            });
+            
+            // Linke Brandwand
+            const linkeWand = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, effektiveHoehe, effektiveTiefe),
+                brandwandMaterial
+            );
+            linkeWand.position.set(offsetX - 0.1, effektiveHoehe / 2, offsetZ + effektiveTiefe / 2);
+            konfiguratorGruppe.add(linkeWand);
+            
+            // Rechte Brandwand
+            const rechteWand = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, effektiveHoehe, effektiveTiefe),
+                brandwandMaterial
+            );
+            rechteWand.position.set(offsetX + effektiveBreite + 0.1, effektiveHoehe / 2, offsetZ + effektiveTiefe / 2);
+            konfiguratorGruppe.add(rechteWand);
+            
+            // Nutzungszonen generieren (vereinfachte Darstellung)
+            generateZones(offsetX, offsetZ, effektiveBreite, effektiveTiefe, anzahlGeschosse, geschosshoehe, rasterweite);
+            
+            // Envelope (Drahtgitter)
+            const envelopeMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+            const envelopeGeometry = new THREE.BufferGeometry();
+            const envelopeVertices = new Float32Array([
+                offsetX, 0, offsetZ,
+                offsetX + effektiveBreite, 0, offsetZ,
+                offsetX + effektiveBreite, 0, offsetZ + effektiveTiefe,
+                offsetX, 0, offsetZ + effektiveTiefe,
+                offsetX, params.hoehe, offsetZ,
+                offsetX + effektiveBreite, params.hoehe, offsetZ,
+                offsetX + effektiveBreite, params.hoehe, offsetZ + effektiveTiefe,
+                offsetX, params.hoehe, offsetZ + effektiveTiefe
+            ]);
+            envelopeGeometry.setAttribute('position', new THREE.BufferAttribute(envelopeVertices, 3));
+            const envelopeLines = new THREE.LineSegments(envelopeGeometry, envelopeMaterial);
+            konfiguratorGruppe.add(envelopeLines);
+            
+            // Statistik aktualisieren
+            updateStats(effektiveBreite, effektiveTiefe, effektiveHoehe, anzahlGeschosse, rasterweite);
+        }
+        
+        // Funktion zur Generierung der Nutzungszonen
+        function generateZones(offsetX, offsetZ, breite, tiefe, geschosse, geschosshoehe, rasterweite) {
+            // Berechne verfügbare Fläche pro Geschoss
+            const geschossflaeche = breite * tiefe;
+            
+            // Berechne Flächenverteilung
+            const verkehrsflaeche = geschossflaeche * (params.verkehrsflaeche / 100);
+            const nutzflaeche = geschossflaeche - verkehrsflaeche;
+            
+            // Verteilung der Nutzungszonen
+            const wohnflaeche = Math.min(params.wohnbereich, nutzflaeche * 0.4);
+            const privatflaeche = Math.min(params.privatbereich, nutzflaeche * 0.2);
+            const gemeinschaftsflaeche = Math.min(params.gemeinschaft, nutzflaeche * 0.15);
+            const nebenflaeche = Math.min(params.nebenraeume, nutzflaeche * 0.1);
+            
+            // Farben für Zonen
+            const zoneColors = {
+                wohnen: 0x90EE90,
+                privat: 0xADD8E6,
+                gemeinschaft: 0xFFB6C1,
+                neben: 0xD3D3D3,
+                verkehr: 0xFFA500
+            };
+            
+            // Generiere Zonen für jedes Geschoss (außer EG)
+            for (let k = 1; k < geschosse; k++) {
+                // Zonen als farbige Flächen auf dem Boden
+                const zoneHoehe = 0.05;
+                const zoneY = k * geschosshoehe + zoneHoehe / 2;
+                
+                // Wohnzone (Südseite - mehr Sonne)
+                const wohnBreite = breite * 0.5;
+                const wohnTiefe = tiefe * 0.4;
+                const wohnZone = new THREE.Mesh(
+                    new THREE.BoxGeometry(wohnBreite, zoneHoehe, wohnTiefe),
+                    new THREE.MeshStandardMaterial({ color: zoneColors.wohnen, transparent: true, opacity: 0.5 })
+                );
+                wohnZone.position.set(
+                    offsetX + breite * 0.25,
+                    zoneY,
+                    offsetZ + tiefe * 0.8
+                );
+                konfiguratorGruppe.add(wohnZone);
+                
+                // Privatzone (Nordseite)
+                const privatZone = new THREE.Mesh(
+                    new THREE.BoxGeometry(breite * 0.3, zoneHoehe, tiefe * 0.3),
+                    new THREE.MeshStandardMaterial({ color: zoneColors.privat, transparent: true, opacity: 0.5 })
+                );
+                privatZone.position.set(
+                    offsetX + breite * 0.15,
+                    zoneY,
+                    offsetZ + tiefe * 0.15
+                );
+                konfiguratorGruppe.add(privatZone);
+                
+                // Gemeinschaftszone (Mitte)
+                const gemeinschaftZone = new THREE.Mesh(
+                    new THREE.BoxGeometry(breite * 0.2, zoneHoehe, tiefe * 0.3),
+                    new THREE.MeshStandardMaterial({ color: zoneColors.gemeinschaft, transparent: true, opacity: 0.5 })
+                );
+                gemeinschaftZone.position.set(
+                    offsetX + breite * 0.5,
+                    zoneY,
+                    offsetZ + tiefe * 0.5
+                );
+                konfiguratorGruppe.add(gemeinschaftZone);
+                
+                // Nebenraumzone
+                const nebenZone = new THREE.Mesh(
+                    new THREE.BoxGeometry(breite * 0.2, zoneHoehe, tiefe * 0.2),
+                    new THREE.MeshStandardMaterial({ color: zoneColors.neben, transparent: true, opacity: 0.5 })
+                );
+                nebenZone.position.set(
+                    offsetX + breite * 0.8,
+                    zoneY,
+                    offsetZ + tiefe * 0.1
+                );
+                konfiguratorGruppe.add(nebenZone);
+                
+                // Verkehrsfläche (Mittelgang)
+                const verkehrZone = new THREE.Mesh(
+                    new THREE.BoxGeometry(breite * 0.1, zoneHoehe, tiefe),
+                    new THREE.MeshStandardMaterial({ color: zoneColors.verkehr, transparent: true, opacity: 0.5 })
+                );
+                verkehrZone.position.set(
+                    offsetX + breite * 0.5,
+                    zoneY,
+                    offsetZ + tiefe * 0.5
+                );
+                konfiguratorGruppe.add(verkehrZone);
+            }
+        }
+        
+        // Statistik-Funktion
+        function updateStats(breite, tiefe, hoehe, geschosse, rasterweite) {
+            const grundflaeche = breite * tiefe;
+            const geschossflaeche = grundflaeche * geschosse;
+            const bruttoRauminhalt = geschossflaeche * hoehe;
+            const aussenflaeche = 2 * (breite * hoehe + tiefe * hoehe) + grundflaeche;
+            const avVerhaeltnis = aussenflaeche / geschossflaeche;
+            
+            // DIN 277 Kennwerte
+            const bgf = geschossflaeche;
+            const bri = bruttoRauminhalt;
+            const gf = grundflaeche;
+            
+            // GRZ/GFZ Berechnung (Annahme Grundstücksgröße = 1.5 * Gebäudegrundfläche)
+            const grundstuecksflaeche = gf * 1.5;
+            const grz = gf / grundstuecksflaeche;
+            const gfz = bgf / grundstuecksflaeche;
+            
+            // Wohnflächeneffizienz
+            const wohnflaeche = geschossflaeche * 0.7; // 70% der Geschossfläche
+            const effizienz = wohnflaeche / geschossflaeche;
+            
+            // Kosten- und CO2-Schätzung
+            const matParams = materialParams[params.material];
+            const kosten = geschossflaeche * matParams.kosten;
+            const co2 = geschossflaeche * matParams.co2;
+            
+            // Sonnenstunden-Analyse
+            const durchschnittlicheSonnenstunden = calculateAverageSunHours(breite, tiefe);
+            
+            document.getElementById('statsContent').innerHTML = `
+                <p><strong>DIN 277 Kennwerte:</strong></p>
+                <p>BGF: ${bgf.toFixed(1)} m²</p>
+                <p>BRI: ${bri.toFixed(1)} m³</p>
+                <p>Grundfläche: ${gf.toFixed(1)} m²</p>
+                <p>GRZ: ${grz.toFixed(2)}</p>
+                <p>GFZ: ${gfz.toFixed(2)}</p>
+                <hr>
+                <p><strong>Gebäudekennwerte:</strong></p>
+                <p>Geschosse: ${geschosse}</p>
+                <p>A/V-Verhältnis: ${avVerhaeltnis.toFixed(2)}</p>
+                <p>Wohnflächeneffizienz: ${(effizienz * 100).toFixed(1)}%</p>
+                <p>Ø Sonnenstunden: ${durchschnittlicheSonnenstunden.toFixed(1)} h</p>
+                <hr>
+                <p><strong>Kosten & CO₂:</strong></p>
+                <p>Geschätzte Kosten: ${(kosten / 1000).toFixed(0)} k€</p>
+                <p>CO₂-Emissionen: ${co2.toFixed(0)} kg</p>
+                <p>Rasterweite: ${rasterweite.toFixed(1)} m</p>
+            `;
+        }
+        
+        // Hilfsfunktion für durchschnittliche Sonnenstunden
+        function calculateAverageSunHours(breite, tiefe) {
+            let total = 0;
+            let count = 0;
+            
+            for (let i = 0; i < 10; i++) {
+                for (let j = 0; j < 10; j++) {
+                    const x = -breite/2 + (i + 0.5) * breite / 10;
+                    const z = -tiefe/2 + (j + 0.5) * tiefe / 10;
+                    total += calculateSunHours(x, z, breite, tiefe);
+                    count++;
+                }
+            }
+            
+            return total / count;
+        }
+        
+        // Event-Listener für Controls
+        document.getElementById('material').addEventListener('change', (e) => {
+            params.material = e.target.value;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('raster').addEventListener('change', (e) => {
+            params.raster = e.target.value;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('breite').addEventListener('input', (e) => {
+            params.breite = parseFloat(e.target.value);
+            document.getElementById('breiteValue').textContent = params.breite;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('tiefe').addEventListener('input', (e) => {
+            params.tiefe = parseFloat(e.target.value);
+            document.getElementById('tiefeValue').textContent = params.tiefe;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('hoehe').addEventListener('input', (e) => {
+            params.hoehe = parseFloat(e.target.value);
+            document.getElementById('hoeheValue').textContent = params.hoehe;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('fensteranteil').addEventListener('input', (e) => {
+            params.fensteranteil = parseFloat(e.target.value);
+            document.getElementById('fensteranteilValue').textContent = params.fensteranteil;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('fensterbreite').addEventListener('input', (e) => {
+            params.fensterbreite = parseFloat(e.target.value);
+            document.getElementById('fensterbreiteValue').textContent = params.fensterbreite;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('balkone').addEventListener('input', (e) => {
+            params.balkone = parseInt(e.target.value);
+            document.getElementById('balkoneValue').textContent = params.balkone;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('balkonbreite').addEventListener('input', (e) => {
+            params.balkonbreite = parseFloat(e.target.value);
+            document.getElementById('balkonbreiteValue').textContent = params.balkonbreite;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('balkontiefe').addEventListener('input', (e) => {
+            params.balkontiefe = parseFloat(e.target.value);
+            document.getElementById('balkontiefeValue').textContent = params.balkontiefe;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('balkonStrasse').addEventListener('change', (e) => {
+            params.balkonStrasse = e.target.checked;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('balkonHof').addEventListener('change', (e) => {
+            params.balkonHof = e.target.checked;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('wohnbereich').addEventListener('input', (e) => {
+            params.wohnbereich = parseFloat(e.target.value);
+            document.getElementById('wohnbereichValue').textContent = params.wohnbereich;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('privatbereich').addEventListener('input', (e) => {
+            params.privatbereich = parseFloat(e.target.value);
+            document.getElementById('privatbereichValue').textContent = params.privatbereich;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('gemeinschaft').addEventListener('input', (e) => {
+            params.gemeinschaft = parseFloat(e.target.value);
+            document.getElementById('gemeinschaftValue').textContent = params.gemeinschaft;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('nebenraeume').addEventListener('input', (e) => {
+            params.nebenraeume = parseFloat(e.target.value);
+            document.getElementById('nebenraeumeValue').textContent = params.nebenraeume;
+            buildKonfigurator();
+        });
+        
+        document.getElementById('verkehrsflaeche').addEventListener('input', (e) => {
+            params.verkehrsflaeche = parseFloat(e.target.value);
+            document.getElementById('verkehrsflaecheValue').textContent = params.verkehrsflaeche;
+            buildKonfigurator();
+        });
+        
+        // Export-Funktionen
+        window.exportOBJ = () => {
+            const exporter = new OBJExporter();
+            const result = exporter.parse(konfiguratorGruppe);
+            downloadFile('gebaeude.obj', result);
+        };
+        
+        window.exportGLTF = () => {
+            const exporter = new GLTFExporter();
+            exporter.parse(konfiguratorGruppe, (result) => {
+                const output = JSON.stringify(result, null, 2);
+                downloadFile('gebaeude.gltf', output);
+            }, (error) => {
+                console.error('Export-Fehler:', error);
+            });
+        };
+        
+        function downloadFile(filename, content) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Initiales Gebäude bauen
+        buildKonfigurator();
+        
+        // Animation
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
 // ==================================================================
 //  === ENDE IHR KONFIGURATOR ===
 // ==================================================================
@@ -325,11 +1293,564 @@ function buildKonfigurator() {
 //  ctx enthält: BRI, BGF, GRF, geschosse, GRZ, GFZ, AV, A (Hüllfläche),
 //               breite, tiefe, traufe sowie gruppe (konfiguratorGruppe).
 // ==================================================================
-function eigenesKriterium(ctx) {
-  // BEISPIEL (ersetzen): Kompaktheit = BGF je m² Hüllfläche
-  // return { label: 'Kompaktheit', wert: (ctx.A ? (ctx.BGF / ctx.A).toFixed(2) : '0'), einheit: 'm²/m²' };
-  return null;
-}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonnenstunden-Zonierung</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+            font-size: 14px;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            z-index: 100;
+            width: 300px;
+        }
+        #controls label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        #controls input, #controls select {
+            width: 100%;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+        #stats {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+            font-size: 12px;
+            max-width: 350px;
+        }
+        .slider-value {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        .section {
+            border-top: 1px solid #555;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+        .section h4 {
+            margin: 5px 0;
+            color: #4CAF50;
+        }
+        .evaluation {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h3>Sonnenstunden-Zonierung</h3>
+        <p>Bewertung der Nutzungszonen basierend auf Besonnung</p>
+    </div>
+    
+    <div id="controls">
+        <h3>Zonierungs-Parameter</h3>
+        
+        <div class="section">
+            <h4>Gebäudegeometrie</h4>
+            <label>Gebäudebreite (m): 
+                <input type="range" id="breite" min="8" max="20" value="14" step="0.5">
+                <span class="slider-value" id="breiteValue">14</span>
+            </label>
+            
+            <label>Gebäudetiefe (m): 
+                <input type="range" id="tiefe" min="8" max="16" value="12" step="0.5">
+                <span class="slider-value" id="tiefeValue">12</span>
+            </label>
+            
+            <label>Geschosszahl:
+                <input type="range" id="geschosse" min="2" max="6" value="3" step="1">
+                <span class="slider-value" id="geschosseValue">3</span>
+            </label>
+        </div>
+        
+        <div class="section">
+            <h4>Nutzungszonen (m²)</h4>
+            <label>Wohnbereich: 
+                <input type="range" id="wohnbereich" min="20" max="100" value="60" step="5">
+                <span class="slider-value" id="wohnbereichValue">60</span>
+            </label>
+            
+            <label>Private Bereiche: 
+                <input type="range" id="privatbereich" min="10" max="50" value="25" step="5">
+                <span class="slider-value" id="privatbereichValue">25</span>
+            </label>
+            
+            <label>Gemeinschaftsbereiche: 
+                <input type="range" id="gemeinschaft" min="10" max="40" value="20" step="5">
+                <span class="slider-value" id="gemeinschaftValue">20</span>
+            </label>
+            
+            <label>Nebenräume: 
+                <input type="range" id="nebenraeume" min="5" max="30" value="15" step="5">
+                <span class="slider-value" id="nebenraeumeValue">15</span>
+            </label>
+            
+            <label>Max. Verkehrsfläche (%): 
+                <input type="range" id="verkehrsflaeche" min="10" max="30" value="20" step="5">
+                <span class="slider-value" id="verkehrsflaecheValue">20</span>
+            </label>
+        </div>
+        
+        <div class="section">
+            <h4>Sonnenstunden-Bewertung</h4>
+            <label>Mindest-Sonnenstunden für Wohnbereiche: 
+                <input type="range" id="minSonnenstunden" min="2" max="8" value="5" step="0.5">
+                <span class="slider-value" id="minSonnenstundenValue">5</span>
+            </label>
+        </div>
+    </div>
+    
+    <div id="stats">
+        <h4>Zonierungs-Bewertung</h4>
+        <div id="statsContent"></div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(25, 20, 25);
+        camera.lookAt(0, 5, 0);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.25;
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(10, 20, 10);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+        
+        const hemisphereLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.5);
+        scene.add(hemisphereLight);
+        
+        // Ground
+        const groundGeometry = new THREE.PlaneGeometry(50, 50);
+        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x808080, side: THREE.DoubleSide });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.01;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // Grid helper
+        const gridHelper = new THREE.GridHelper(50, 50, 0x888888, 0xcccccc);
+        scene.add(gridHelper);
+        
+        // Zonierungs Gruppe
+        const zonierungsGruppe = new THREE.Group();
+        scene.add(zonierungsGruppe);
+        
+        // Parameter
+        let params = {
+            breite: 14,
+            tiefe: 12,
+            geschosse: 3,
+            wohnbereich: 60,
+            privatbereich: 25,
+            gemeinschaft: 20,
+            nebenraeume: 15,
+            verkehrsflaeche: 20,
+            minSonnenstunden: 5
+        };
+        
+        // Sonnenstunden-Analyse
+        function calculateSunHours(x, z, breite, tiefe) {
+            // Berücksichtigt Gebäudeausrichtung (Südseite = positive Z)
+            const normalizedZ = (z + tiefe/2) / tiefe;
+            const normalizedX = (x + breite/2) / breite;
+            
+            // Grundwert: Südseite mehr Sonne
+            let sunHours = 3 + normalizedZ * 5; // 3-8 Stunden
+            
+            // Randbereiche etwas weniger
+            sunHours += Math.sin(normalizedX * Math.PI) * 1.5;
+            
+            // Verschattung durch Nachbargebäude simulieren
+            if (normalizedX < 0.2 || normalizedX > 0.8) {
+                sunHours *= 0.8;
+            }
+            
+            return Math.max(1, Math.min(10, sunHours));
+        }
+        
+        // Funktion zur Bewertung der sonnenstundenbasierten Zonierung
+        function evaluateSunZoning(breite, tiefe, geschosse) {
+            const minSun = params.minSonnenstunden;
+            const geschossflaeche = breite * tiefe;
+            
+            // Berechne Flächenverteilung
+            const verkehrsflaeche = geschossflaeche * (params.verkehrsflaeche / 100);
+            const nutzflaeche = geschossflaeche - verkehrsflaeche;
+            
+            // Ziel-Flächen für Wohnbereiche (pro Geschoss)
+            const wohnZiel = Math.min(params.wohnbereich, nutzflaeche * 0.4);
+            const privatZiel = Math.min(params.privatbereich, nutzflaeche * 0.2);
+            const gemeinschaftZiel = Math.min(params.gemeinschaft, nutzflaeche * 0.15);
+            
+            // Gesamte Wohn- und Aufenthaltsfläche (ohne EG)
+            const gesamteWohnAufenthaltsflaeche = (wohnZiel + privatZiel + gemeinschaftZiel) * (geschosse - 1);
+            
+            // Berechne besonnte Fläche
+            let besonnteWohnflaeche = 0;
+            let gesamteWohnflaeche = 0;
+            
+            // Raster für Analyse
+            const rasterAnalyse = 0.5; // 0.5m Raster
+            const anzahlX = Math.floor(breite / rasterAnalyse);
+            const anzahlZ = Math.floor(tiefe / rasterAnalyse);
+            
+            for (let i = 0; i < anzahlX; i++) {
+                for (let j = 0; j < anzahlZ; j++) {
+                    const x = -breite/2 + (i + 0.5) * rasterAnalyse;
+                    const z = -tiefe/2 + (j + 0.5) * rasterAnalyse;
+                    
+                    // Prüfe ob dieser Punkt in einer Wohnzone liegt (Südseite bevorzugt)
+                    const normalizedZ = (z + tiefe/2) / tiefe;
+                    const normalizedX = (x + breite/2) / breite;
+                    
+                    // Vereinfachte Zonierung: Südseite = Wohnen, Nordseite = Nebenräume
+                    const istWohnzone = normalizedZ > 0.4 && normalizedX > 0.2 && normalizedX < 0.8;
+                    
+                    if (istWohnzone) {
+                        const sunHours = calculateSunHours(x, z, breite, tiefe);
+                        gesamteWohnflaeche += rasterAnalyse * rasterAnalyse;
+                        
+                        if (sunHours >= minSun) {
+                            besonnteWohnflaeche += rasterAnalyse * rasterAnalyse;
+                        }
+                    }
+                }
+            }
+            
+            // Hochrechnung auf alle Geschosse (außer EG)
+            gesamteWohnflaeche *= (geschosse - 1);
+            besonnteWohnflaeche *= (geschosse - 1);
+            
+            // Prozentuale Erfüllung
+            const erfuellungsgrad = gesamteWohnflaeche > 0 ? 
+                (besonnteWohnflaeche / gesamteWohnflaeche) * 100 : 0;
+            
+            return {
+                gesamteWohnflaeche: gesamteWohnflaeche,
+                besonnteWohnflaeche: besonnteWohnflaeche,
+                erfuellungsgrad: erfuellungsgrad,
+                minSonnenstunden: minSun
+            };
+        }
+        
+        // Funktion zur Visualisierung der Zonierung
+        function buildZonierung() {
+            // Clear existing
+            while (zonierungsGruppe.children.length > 0) {
+                zonierungsGruppe.remove(zonierungsGruppe.children[0]);
+            }
+            
+            const breite = params.breite;
+            const tiefe = params.tiefe;
+            const geschosse = params.geschosse;
+            const geschosshoehe = 3.0;
+            
+            // Positionierung
+            const offsetX = -breite / 2;
+            const offsetZ = -tiefe / 2;
+            
+            // Farben für Zonen
+            const zoneColors = {
+                wohnen: 0x90EE90,
+                privat: 0xADD8E6,
+                gemeinschaft: 0xFFB6C1,
+                neben: 0xD3D3D3,
+                verkehr: 0xFFA500
+            };
+            
+            // Generiere Zonen für jedes Geschoss (außer EG)
+            for (let k = 1; k < geschosse; k++) {
+                // Zonen als farbige Flächen auf dem Boden
+                const zoneHoehe = 0.05;
+                const zoneY = k * geschosshoehe + zoneHoehe / 2;
+                
+                // Sonnenstunden-basierte Zonierung
+                // Südseite (hohe Sonnenstunden) = Wohnen
+                // Nordseite (niedrige Sonnenstunden) = Nebenräume
+                // Mitte = Gemeinschaft
+                // Ost/West = Privat
+                
+                // Wohnzone (Südseite - mehr Sonne)
+                const wohnBreite = breite * 0.5;
+                const wohnTiefe = tiefe * 0.4;
+                const wohnZone = new THREE.Mesh(
+                    new THREE.BoxGeometry(wohnBreite, zoneHoehe, wohnTiefe),
+                    new THREE.MeshStandardMaterial({ 
+                        color: zoneColors.wohnen, 
+                        transparent: true, 
+                        opacity: 0.5 
+                    })
+                );
+                wohnZone.position.set(
+                    offsetX + breite * 0.25,
+                    zoneY,
+                    offsetZ + tiefe * 0.8
+                );
+                zonierungsGruppe.add(wohnZone);
+                
+                // Privatzone (Ostseite)
+                const privatZone = new THREE.Mesh(
+                    new THREE.BoxGeometry(breite * 0.2, zoneHoehe, tiefe * 0.3),
+                    new THREE.MeshStandardMaterial({ 
+                        color: zoneColors.privat, 
+                        transparent: true, 
+                        opacity: 0.5 
+                    })
+                );
+                privatZone.position.set(
+                    offsetX + breite * 0.1,
+                    zoneY,
+                    offsetZ + tiefe * 0.5
+                );
+                zonierungsGruppe.add(privatZone);
+                
+                // Gemeinschaftszone (Mitte)
+                const gemeinschaftZone = new THREE.Mesh(
+                    new THREE.BoxGeometry(breite * 0.2, zoneHoehe, tiefe * 0.3),
+                    new THREE.MeshStandardMaterial({ 
+                        color: zoneColors.gemeinschaft, 
+                        transparent: true, 
+                        opacity: 0.5 
+                    })
+                );
+                gemeinschaftZone.position.set(
+                    offsetX + breite * 0.5,
+                    zoneY,
+                    offsetZ + tiefe * 0.5
+                );
+                zonierungsGruppe.add(gemeinschaftZone);
+                
+                // Nebenraumzone (Nordseite)
+                const nebenZone = new THREE.Mesh(
+                    new THREE.BoxGeometry(breite * 0.3, zoneHoehe, tiefe * 0.2),
+                    new THREE.MeshStandardMaterial({ 
+                        color: zoneColors.neben, 
+                        transparent: true, 
+                        opacity: 0.5 
+                    })
+                );
+                nebenZone.position.set(
+                    offsetX + breite * 0.15,
+                    zoneY,
+                    offsetZ + tiefe * 0.1
+                );
+                zonierungsGruppe.add(nebenZone);
+                
+                // Verkehrsfläche (Mittelgang)
+                const verkehrZone = new THREE.Mesh(
+                    new THREE.BoxGeometry(breite * 0.1, zoneHoehe, tiefe),
+                    new THREE.MeshStandardMaterial({ 
+                        color: zoneColors.verkehr, 
+                        transparent: true, 
+                        opacity: 0.5 
+                    })
+                );
+                verkehrZone.position.set(
+                    offsetX + breite * 0.5,
+                    zoneY,
+                    offsetZ + tiefe * 0.5
+                );
+                zonierungsGruppe.add(verkehrZone);
+            }
+            
+            // Envelope (Drahtgitter)
+            const envelopeMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+            const envelopeGeometry = new THREE.BufferGeometry();
+            const envelopeVertices = new Float32Array([
+                offsetX, 0, offsetZ,
+                offsetX + breite, 0, offsetZ,
+                offsetX + breite, 0, offsetZ + tiefe,
+                offsetX, 0, offsetZ + tiefe,
+                offsetX, geschosse * geschosshoehe, offsetZ,
+                offsetX + breite, geschosse * geschosshoehe, offsetZ,
+                offsetX + breite, geschosse * geschosshoehe, offsetZ + tiefe,
+                offsetX, geschosse * geschosshoehe, offsetZ + tiefe
+            ]);
+            envelopeGeometry.setAttribute('position', new THREE.BufferAttribute(envelopeVertices, 3));
+            const envelopeLines = new THREE.LineSegments(envelopeGeometry, envelopeMaterial);
+            zonierungsGruppe.add(envelopeLines);
+            
+            // Bewertung aktualisieren
+            updateBewertung();
+        }
+        
+        // Bewertungs-Funktion
+        function updateBewertung() {
+            const breite = params.breite;
+            const tiefe = params.tiefe;
+            const geschosse = params.geschosse;
+            
+            // Sonnenstunden-basierte Zonierungsbewertung
+            const zonierung = evaluateSunZoning(breite, tiefe, geschosse);
+            
+            document.getElementById('statsContent').innerHTML = `
+                <div class="evaluation">
+                    <h4>☀️ Sonnenstunden-Zonierung</h4>
+                    <p>Mindest-Sonnenstunden: ${zonierung.minSonnenstunden} h</p>
+                    <p>Wohnfläche gesamt: ${zonierung.gesamteWohnflaeche.toFixed(1)} m²</p>
+                    <p>Besonnte Wohnfläche: ${zonierung.besonnteWohnflaeche.toFixed(1)} m²</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${Math.min(100, zonierung.erfuellungsgrad)}%"></div>
+                    </div>
+                    <p><strong>Erfüllungsgrad: ${zonierung.erfuellungsgrad.toFixed(1)}%</strong></p>
+                    <p style="font-size: 11px; color: #aaa;">
+                        ${zonierung.erfuellungsgrad >= 80 ? '✅ Sehr gute Besonnung der Wohnbereiche' : 
+                          zonierung.erfuellungsgrad >= 60 ? '⚠️ Akzeptable Besonnung, Optimierung möglich' : 
+                          '❌ Ungenügende Besonnung, Zonierung anpassen'}
+                    </p>
+                </div>
+            `;
+        }
+        
+        // Event-Listener für Controls
+        document.getElementById('breite').addEventListener('input', (e) => {
+            params.breite = parseFloat(e.target.value);
+            document.getElementById('breiteValue').textContent = params.breite;
+            buildZonierung();
+        });
+        
+        document.getElementById('tiefe').addEventListener('input', (e) => {
+            params.tiefe = parseFloat(e.target.value);
+            document.getElementById('tiefeValue').textContent = params.tiefe;
+            buildZonierung();
+        });
+        
+        document.getElementById('geschosse').addEventListener('input', (e) => {
+            params.geschosse = parseInt(e.target.value);
+            document.getElementById('geschosseValue').textContent = params.geschosse;
+            buildZonierung();
+        });
+        
+        document.getElementById('wohnbereich').addEventListener('input', (e) => {
+            params.wohnbereich = parseFloat(e.target.value);
+            document.getElementById('wohnbereichValue').textContent = params.wohnbereich;
+            buildZonierung();
+        });
+        
+        document.getElementById('privatbereich').addEventListener('input', (e) => {
+            params.privatbereich = parseFloat(e.target.value);
+            document.getElementById('privatbereichValue').textContent = params.privatbereich;
+            buildZonierung();
+        });
+        
+        document.getElementById('gemeinschaft').addEventListener('input', (e) => {
+            params.gemeinschaft = parseFloat(e.target.value);
+            document.getElementById('gemeinschaftValue').textContent = params.gemeinschaft;
+            buildZonierung();
+        });
+        
+        document.getElementById('nebenraeume').addEventListener('input', (e) => {
+            params.nebenraeume = parseFloat(e.target.value);
+            document.getElementById('nebenraeumeValue').textContent = params.nebenraeume;
+            buildZonierung();
+        });
+        
+        document.getElementById('verkehrsflaeche').addEventListener('input', (e) => {
+            params.verkehrsflaeche = parseFloat(e.target.value);
+            document.getElementById('verkehrsflaecheValue').textContent = params.verkehrsflaeche;
+            buildZonierung();
+        });
+        
+        document.getElementById('minSonnenstunden').addEventListener('input', (e) => {
+            params.minSonnenstunden = parseFloat(e.target.value);
+            document.getElementById('minSonnenstundenValue').textContent = params.minSonnenstunden;
+            buildZonierung();
+        });
+        
+        // Initiale Zonierung bauen
+        buildZonierung();
+        
+        // Animation
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+        
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
 // ==================================================================
 //  === ENDE EIGENES KRITERIUM ===
 // ==================================================================
