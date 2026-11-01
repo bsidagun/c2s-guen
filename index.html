@@ -303,6 +303,13 @@ function buildKontext() {
 function buildKonfigurator() {
   konfiguratorGruppe.clear();
 
+  // Define rasterOptionen inside the function
+  const rasterOptionen = {
+    klein: 2.5,
+    mittler: 5.0,
+    groß: 7.5
+  };
+
   const breite = parseFloat(document.getElementById('breite').value);
   const tiefe = parseFloat(document.getElementById('tiefe').value);
   const hoehe = parseFloat(document.getElementById('traufe').value);
