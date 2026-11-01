@@ -397,22 +397,22 @@ function buildKonfigurator() {
     }
   }
 
-  for (let i = 0; i < rastervorlageTiefe.length; i++) {
-    const z = rastervorlageTiefe[i] - tiefe / 2;
-    for (let k = 0; k < geschosszahl; k++) {
-      const y = k * geschossHoehe + geschossHoehe / 2;
-      for (let j = 0; j < rastervorlageBreite.length - 1; j++) {
-        const x1 = rastervorlageBreite[j] - breite / 2;
-        const x2 = rastervorlageBreite[j + 1] - breite / 2;
-        const laenge = x2 - x1;
-        const traegerGeometrie = new THREE.BoxGeometry(laenge, 0.1, 0.1);
-        const traegerObjekt = new THREE.Mesh(traegerGeometrie, materialTragwerk);
-        traegerObjekt.position.set((x1 + x2) / 2, y, z);
-        konfiguratorGruppe.add(traegerObjekt);
-        traeger.push(traegerObjekt);
-      }
+ for (let i = 0; i < rastervorlageBreite.length; i++) {
+  const x = rastervorlageBreite[i] - breite / 2;
+  for (let k = 0; k < geschosszahl; k++) {
+    const y = k * geschossHoehe + geschossHoehe / 2;
+    for (let j = 0; j < rastervorlageTiefe.length - 1; j++) {
+      const z1 = rastervorlageTiefe[j] - tiefe / 2;
+      const z2 = rastervorlageTiefe[j + 1] - tiefe / 2;
+      const laenge = z2 - z1;
+      const traegerGeometrie = new THREE.BoxGeometry(0.1, 0.1, laenge);
+      const traegerObjekt = new THREE.Mesh(traegerGeometrie, materialTragwerk);
+      traegerObjekt.position.set(x, y, (z1 + z2) / 2);
+      konfiguratorGruppe.add(traegerObjekt);
+      traeger.push(traegerObjekt);
     }
   }
+}
 
   for (let i = 0; i < rastervorlageBreite.length; i++) {
   const x = rastervorlageBreite[i] - breite / 2;
