@@ -431,66 +431,93 @@ function buildKonfigurator() {
     }
   }
 
-  for (let k = 0; k < geschosszahl; k++) {
-    const y = k * geschossHoehe + geschossHoehe / 2;
-    const deckenGeometrie = new THREE.BoxGeometry(breite, 0.1, tiefe);
-    const deckenMaterial = k === 0 ? new THREE.MeshStandardMaterial({ color: 0x90EE90, roughness: 0.5 }) : new THREE.MeshStandardMaterial({ color: 0xD3D3D3, roughness: 0.6 });
-    const decken = new THREE.Mesh(deckenGeometrie, deckenMaterial);
-    decken.position.set(0, y, 0);
-    konfiguratorGruppe.add(decken);
-  }
+  // ✅ Full building: walls, roof, floor
+  const wandMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+  const dachMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
+  const bodenMaterial = new THREE.MeshStandardMaterial({ color: 0x90EE90 });
 
-  const fensterGeometrie = new THREE.BoxGeometry(0.8, 1.0, 0.05);
-  const fensterMaterial = new THREE.MeshStandardMaterial({ color: 0xADD8E6, roughness: 0.3 });
-  const fensterRahmen = new THREE.BoxGeometry(0.05, 1.0, 0.05);
-  const rahmenMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+  // Floor
+  const boden = new THREE.Mesh(
+    new THREE.BoxGeometry(breite, 0.1, tiefe),
+    bodenMaterial
+  );
+  boden.position.set(0, 0.05, 0);
+  konfiguratorGruppe.add(boden);
 
-  const balkonTiefe = 0.8;
-  const balkonGeometrie = new THREE.BoxGeometry(balkonTiefe, 0.1, 0.8);
-  const balkonMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.7 });
+  // Walls
+  const wandBreite = new THREE.BoxGeometry(breite, hoehe, 0.1);
+  const wandTiefe = new THREE.BoxGeometry(tiefe, hoehe, 0.1);
+  const wand1 = new THREE.Mesh(wandBreite, wandMaterial);
+  wand1.position.set(0, hoehe / 2, -tiefe / 2);
+  konfiguratorGruppe.add(wand1);
 
-  const fassadenZ = [-tiefe / 2, tiefe / 2];
+  const wand2 = new THREE.Mesh(wandBreite, wandMaterial);
+  wand2.position.set(0, hoehe / 2, tiefe / 2);
+  konfiguratorGruppe.add(wand2);
 
-  for (let z of fassadenZ) {
-    const zPos = z;
-    const istHoffassade = z === tiefe / 2;
+  const wand3 = new THREE.Mesh(wandTiefe, wandMaterial);
+  wand3.position.set(-breite / 2, hoehe / 2, 0);
+  konfiguratorGruppe.add(wand3);
 
-    for (let i = 0; i < rastervorlageBreite.length; i++) {
-      const x = rastervorlageBreite[i] - breite / 2;
+  const wand4 = new THREE.Mesh(wandTiefe, wandMaterial);
+  wand4.position.set(breite / 2, hoehe / 2, 0);
+  konfiguratorGruppe.add(wand4);
 
-      for (let k = 1; k < geschosszahl; k++) {
-        const y = k * geschossHoehe + geschossHoehe / 2;
-        const balkonX = x;
-        const balkonZ = zPos + (istHoffassade ? -0.4 : 0.4);
-        const balkon = new THREE.Mesh(balkonGeometrie, balkonMaterial);
-        balkon.position.set(balkonX, y, balkonZ);
-        konfiguratorGruppe.add(balkon);
+  // Roof
+  const dach = new THREE.BoxGeometry(breite, 0.5, tiefe);
+  const dachMesh = new THREE.Mesh(dach, dachMaterial);
+  dachMesh.position.set(0, hoehe + 0.25, 0);
+  konfiguratorGruppe.add(dachMesh);
+
+  // ✅ Zoning: color zones
+  const zonen = [
+    { name: "Wohnbereich", color: 0x0088ff, flaeche: 0.4 },
+    { name: "Private Bereiche", color: 0x0055aa, flaeche: 0.2 },
+    { name: "Gemeinschaftsbereiche", color: 0x00cc99, flaeche: 0.1 },
+    { name: "Nebenräume", color: 0x888888, flaeche: 0.15 },
+    { name: "Verkehrsflächen", color: 0x444444, flaeche: 0.15 }
+  ];
+
+  const gesamtFlaeche = breite * tiefe;
+  const geschossFlaeche = gesamtFlaeche / geschosszahl;
+
+  let verkehrsFlaeche = 0;
+  zonen.forEach(z => {
+    const flaeche = z.flaeche * geschossFlaeche;
+    if (z.name === "Verkehrsflächen") {
+      verkehrsFlaeche = flaeche;
+    }
+  });
+
+  const zellenX = 5, zellenY = 5;
+  const zelleWidth = breite / zellenX;
+  const zelleDepth = tiefe / zellenY;
+
+  for (let i = 0; i < zellenX; i++) {
+    for (let j = 0; j < zellenY; j++) {
+      const x = breite / 2 - (zellenX - 1) * zelleWidth / 2 + i * zelleWidth;
+      const z = tiefe / 2 - (zellenY - 1) * zelleDepth / 2 + j * zelleDepth;
+      const zelle = new THREE.Mesh(
+        new THREE.PlaneGeometry(zelleWidth, zelleDepth),
+        new THREE.MeshStandardMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.3 })
+      );
+      zelle.position.set(x, 0, z);
+      zelle.rotation.x = -Math.PI / 2;
+      konfiguratorGruppe.add(zelle);
+
+      let zonenName = "Nebenräume";
+      if (i === 0 || j === 0 || i === zellenX - 1 || j === zellenY - 1) {
+        zonenName = "Verkehrsflächen";
+      } else if (i === 2 && j === 2) {
+        zonenName = "Gemeinschaftsbereiche";
+      } else if (i === 1 && j === 1) {
+        zonenName = "Wohnbereich";
       }
 
-      for (let k = 0; k < geschosszahl; k++) {
-        const y = k * geschossHoehe + geschossHoehe / 2;
-        const istErdgeschoss = k === 0;
-        const istStraßenfassade = z === -tiefe / 2;
-
-        if (istStraßenfassade || istHoffassade) {
-          if (istErdgeschoss) {
-            const fenster = new THREE.Mesh(fensterGeometrie, fensterMaterial);
-            fenster.position.set(x, y, zPos);
-            konfiguratorGruppe.add(fenster);
-
-            const rahmen = new THREE.Mesh(fensterRahmen, rahmenMaterial);
-            rahmen.position.set(x, y, zPos);
-            konfiguratorGruppe.add(rahmen);
-          } else {
-            const fenster = new THREE.Mesh(fensterGeometrie, fensterMaterial);
-            fenster.position.set(x, y, zPos);
-            konfiguratorGruppe.add(fenster);
-
-            const rahmen = new THREE.Mesh(fensterRahmen, rahmenMaterial);
-            rahmen.position.set(x, y, zPos);
-            konfiguratorGruppe.add(rahmen);
-          }
-        }
+      const z = zonen.find(z => z.name === zonenName);
+      if (z) {
+        zelle.material.color.setHex(z.color);
+        zelle.material.opacity = 0.7;
       }
     }
   }
