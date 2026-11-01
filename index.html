@@ -1450,10 +1450,18 @@ function buildKontext() {
         <div id="statsContent"></div>
     </div>
 
+    <!-- Korrekte CDN-Links für three.js r128 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
+        // Prüfe ob three.js geladen wurde
+        if (typeof THREE === 'undefined') {
+            console.error('Three.js konnte nicht geladen werden!');
+        } else {
+            console.log('Three.js Version:', THREE.REVISION);
+        }
+
         // Scene setup
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
