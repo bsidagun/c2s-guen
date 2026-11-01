@@ -351,7 +351,9 @@ function buildKontext() {
             border-radius: 5px;
             z-index: 100;
             font-size: 12px;
-            max-width: 300px;
+            max-width: 350px;
+            max-height: 300px;
+            overflow-y: auto;
         }
         #exportButtons {
             position: absolute;
@@ -384,6 +386,13 @@ function buildKontext() {
         .section h4 {
             margin: 5px 0;
             color: #4CAF50;
+        }
+        .evaluation {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -480,7 +489,7 @@ function buildKontext() {
         <button onclick="exportGLTF()">Export glTF</button>
     </div>
 
-    <!-- Korrekte CDN-Links für three.js r128 -->
+    <!-- Three.js als UMD-Build laden (funktioniert ohne Module) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/OBJExporter.js"></script>
@@ -586,6 +595,43 @@ function buildKontext() {
                 co2: 400
             }
         };
+        
+        // EIGENES KRITERIUM: Materialeffizienz (Verhältnis von Nutzfläche zu Materialvolumen)
+        function eigenesKriterium(ctx) {
+            // ctx enthält: BRI, BGF, GRF, geschosse, GRZ, GFZ, AV, A, breite, tiefe, traufe, gruppe
+            
+            // Materialvolumen basierend auf Materialtyp schätzen
+            const matParams = materialParams[params.material];
+            const rasterweite = matParams.rasterweiten[params.raster];
+            
+            // Anzahl der Stützen berechnen
+            const anzahlX = Math.floor(ctx.breite / rasterweite);
+            const anzahlZ = Math.floor(ctx.tiefe / rasterweite);
+            const anzahlStuetzen = (anzahlX + 1) * (anzahlZ + 1) * ctx.geschosse;
+            
+            // Stützenvolumen
+            const stuetzenVolumen = anzahlStuetzen * matParams.stuetzen.breite * matParams.stuetzen.tiefe * 3.0;
+            
+            // Trägervolumen (vereinfacht)
+            const traegerLaengeX = (anzahlX + 1) * ctx.tiefe;
+            const traegerLaengeZ = (anzahlZ + 1) * ctx.breite;
+            const traegerVolumen = (traegerLaengeX + traegerLaengeZ) * matParams.traeger.breite * matParams.traeger.hoehe * ctx.geschosse;
+            
+            // Deckenvolumen
+            const deckenVolumen = ctx.GRF * matParams.decke.dicke * ctx.geschosse;
+            
+            // Gesamtmaterialvolumen
+            const materialVolumen = stuetzenVolumen + traegerVolumen + deckenVolumen;
+            
+            // Materialeffizienz = BGF / Materialvolumen (m²/m³)
+            const materialEffizienz = ctx.BGF / materialVolumen;
+            
+            return {
+                label: 'Materialeffizienz',
+                wert: materialEffizienz,
+                einheit: 'm²/m³'
+            };
+        }
         
         // Funktion zum Erstellen des Gebäudes
         function buildKonfigurator() {
@@ -938,6 +984,24 @@ function buildKontext() {
             const kosten = geschossflaeche * matParams.kosten;
             const co2 = geschossflaeche * matParams.co2;
             
+            // Eigenes Kriterium berechnen
+            const ctx = {
+                BRI: bri,
+                BGF: bgf,
+                GRF: gf,
+                geschosse: geschosse,
+                GRZ: grz,
+                GFZ: gfz,
+                AV: avVerhaeltnis,
+                A: aussenflaeche,
+                breite: breite,
+                tiefe: tiefe,
+                traufe: hoehe,
+                gruppe: konfiguratorGruppe
+            };
+            
+            const eigenesKriteriumErgebnis = eigenesKriterium(ctx);
+            
             document.getElementById('statsContent').innerHTML = `
                 <p><strong>DIN 277 Kennwerte:</strong></p>
                 <p>BGF: ${bgf.toFixed(1)} m²</p>
@@ -955,6 +1019,15 @@ function buildKontext() {
                 <p>Geschätzte Kosten: ${(kosten / 1000).toFixed(0)} k€</p>
                 <p>CO₂-Emissionen: ${co2.toFixed(0)} kg</p>
                 <p>Rasterweite: ${rasterweite.toFixed(1)} m</p>
+                <hr>
+                <div class="evaluation">
+                    <h4>🏗️ Eigenes Kriterium</h4>
+                    <p><strong>${eigenesKriteriumErgebnis.label}:</strong></p>
+                    <p>${eigenesKriteriumErgebnis.wert.toFixed(2)} ${eigenesKriteriumErgebnis.einheit}</p>
+                    <p style="font-size: 11px; color: #aaa;">
+                        Höhere Werte = effizientere Materialnutzung
+                    </p>
+                </div>
             `;
         }
         
@@ -1244,7 +1317,7 @@ function buildKontext() {
         <div id="statsContent"></div>
     </div>
 
-    <!-- Korrekte CDN-Links für three.js r128 -->
+    <!-- Three.js als UMD-Build laden (funktioniert ohne Module) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
