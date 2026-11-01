@@ -382,54 +382,53 @@ function buildKonfigurator() {
   for (let i = 0; i < rastervorlageBreite.length; i++) {
     for (let j = 0; j < rastervorlageTiefe.length; j++) {
       const x = rastervorlageBreite[i] - breite / 2;
-      const z = rastervorlageTiefe[j] - tiefe / 2;
-
+      const z1 = rastervorlageTiefe[j] - tiefe / 2;
       for (let k = 0; k < geschosszahl; k++) {
         const y = k * geschossHoehe + geschossHoehe / 2;
         const stuetze = new THREE.Mesh(
           new THREE.CylinderGeometry(0.1, 0.1, geschossHoehe, 8),
           materialTragwerk
         );
-        stuetze.position.set(x, y, z);
+        stuetze.position.set(x, y, z1);
         konfiguratorGruppe.add(stuetze);
         stuetzen.push(stuetze);
       }
     }
   }
 
- for (let i = 0; i < rastervorlageBreite.length; i++) {
-  const x = rastervorlageBreite[i] - breite / 2;
-  for (let k = 0; k < geschosszahl; k++) {
-    const y = k * geschossHoehe + geschossHoehe / 2;
-    for (let j = 0; j < rastervorlageTiefe.length - 1; j++) {
-      const z1 = rastervorlageTiefe[j] - tiefe / 2;
-      const z2 = rastervorlageTiefe[j + 1] - tiefe / 2;
-      const laenge = z2 - z1;
-      const traegerGeometrie = new THREE.BoxGeometry(0.1, 0.1, laenge);
-      const traegerObjekt = new THREE.Mesh(traegerGeometrie, materialTragwerk);
-      traegerObjekt.position.set(x, y, (z1 + z2) / 2);
-      konfiguratorGruppe.add(traegerObjekt);
-      traeger.push(traegerObjekt);
+  for (let i = 0; i < rastervorlageTiefe.length; i++) {
+    const z1 = rastervorlageTiefe[i] - tiefe / 2;
+    for (let k = 0; k < geschosszahl; k++) {
+      const y = k * geschossHoehe + geschossHoehe / 2;
+      for (let j = 0; j < rastervorlageBreite.length - 1; j++) {
+        const x1 = rastervorlageBreite[j] - breite / 2;
+        const x2 = rastervorlageBreite[j + 1] - breite / 2;
+        const laenge = x2 - x1;
+        const traegerGeometrie = new THREE.BoxGeometry(laenge, 0.1, 0.1);
+        const traegerObjekt = new THREE.Mesh(traegerGeometrie, materialTragwerk);
+        traegerObjekt.position.set((x1 + x2) / 2, y, z1);
+        konfiguratorGruppe.add(traegerObjekt);
+        traeger.push(traegerObjekt);
+      }
     }
   }
-}
 
   for (let i = 0; i < rastervorlageBreite.length; i++) {
-  const x = rastervorlageBreite[i] - breite / 2;
-  for (let k = 0; k < geschosszahl; k++) {
-    const y = k * geschossHoehe + geschossHoehe / 2;
-    for (let j = 0; j < rastervorlageTiefe.length - 1; j++) {
-      const z1 = rastervorlageTiefe[j] - tiefe / 2;
-      const z2 = rastervorlageTiefe[j + 1] - tiefe / 2;
-      const laenge = z2 - z1;
-      const traegerGeometrie = new THREE.BoxGeometry(0.1, 0.1, laenge);
-      const traegerObjekt = new THREE.Mesh(traegerGeometrie, materialTragwerk);
-      traegerObjekt.position.set(x, y, (z1 + z2) / 2);
-      konfiguratorGruppe.add(traegerObjekt);
-      traeger.push(traegerObjekt);
+    const x = rastervorlageBreite[i] - breite / 2;
+    for (let k = 0; k < geschosszahl; k++) {
+      const y = k * geschossHoehe + geschossHoehe / 2;
+      for (let j = 0; j < rastervorlageTiefe.length - 1; j++) {
+        const z1 = rastervorlageTiefe[j] - tiefe / 2;
+        const z2 = rastervorlageTiefe[j + 1] - tiefe / 2;
+        const laenge = z2 - z1;
+        const traegerGeometrie = new THREE.BoxGeometry(0.1, 0.1, laenge);
+        const traegerObjekt = new THREE.Mesh(traegerGeometrie, materialTragwerk);
+        traegerObjekt.position.set(x, y, (z1 + z2) / 2);
+        konfiguratorGruppe.add(traegerObjekt);
+        traeger.push(traegerObjekt);
+      }
     }
   }
-}
 
   // ✅ Full building: walls, roof, floor
   const wandMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
@@ -490,37 +489,37 @@ function buildKonfigurator() {
   });
 
   const zellenX = 5, zellenY = 5;
-const zelleWidth = breite / zellenX;
-const zelleDepth = tiefe / zellenY;
+  const zelleWidth = breite / zellenX;
+  const zelleDepth = tiefe / zellenY;
 
-for (let i = 0; i < zellenX; i++) {
-  for (let j = 0; j < zellenY; j++) {
-    const x = breite / 2 - (zellenX - 1) * zelleWidth / 2 + i * zelleWidth;
-    const z1 = tiefe / 2 - (zellenY - 1) * zelleDepth / 2 + j * zelleDepth;
-    const zelle = new THREE.Mesh(
-      new THREE.PlaneGeometry(zelleWidth, zelleDepth),
-      new THREE.MeshStandardMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.3 })
-    );
-    zelle.position.set(x, 0, z1);
-    zelle.rotation.x = -Math.PI / 2;
-    konfiguratorGruppe.add(zelle);
+  for (let i = 0; i < zellenX; i++) {
+    for (let j = 0; j < zellenY; j++) {
+      const x = breite / 2 - (zellenX - 1) * zelleWidth / 2 + i * zelleWidth;
+      const z1 = tiefe / 2 - (zellenY - 1) * zelleDepth / 2 + j * zelleDepth;
+      const zelle = new THREE.Mesh(
+        new THREE.PlaneGeometry(zelleWidth, zelleDepth),
+        new THREE.MeshStandardMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.3 })
+      );
+      zelle.position.set(x, 0, z1);
+      zelle.rotation.x = -Math.PI / 2;
+      konfiguratorGruppe.add(zelle);
 
-    let zonenName = "Nebenräume";
-    if (i === 0 || j === 0 || i === zellenX - 1 || j === zellenY - 1) {
-      zonenName = "Verkehrsflächen";
-    } else if (i === 2 && j === 2) {
-      zonenName = "Gemeinschaftsbereiche";
-    } else if (i === 1 && j === 1) {
-      zonenName = "Wohnbereich";
-    }
+      let zonenName = "Nebenräume";
+      if (i === 0 || j === 0 || i === zellenX - 1 || j === zellenY - 1) {
+        zonenName = "Verkehrsflächen";
+      } else if (i === 2 && j === 2) {
+        zonenName = "Gemeinschaftsbereiche";
+      } else if (i === 1 && j === 1) {
+        zonenName = "Wohnbereich";
+      }
 
-    const z = zonen.find(z => z.name === zonenName);
-    if (z) {
-      zelle.material.color.setHex(z.color);
-      zelle.material.opacity = 0.7;
+      const z = zonen.find(z => z.name === zonenName);
+      if (z) {
+        zelle.material.color.setHex(z.color);
+        zelle.material.opacity = 0.7;
+      }
     }
   }
-}
 
   // ✅ Add null check before setting innerHTML
   if (auswertungPanel) {
