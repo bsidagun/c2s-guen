@@ -414,23 +414,22 @@ function buildKonfigurator() {
     }
   }
 
-  // ✅ Fixed: Rename z to z2 in this loop
   for (let i = 0; i < rastervorlageBreite.length; i++) {
-    const x = rastervorlageBreite[i] - breite / 2;
-    for (let k = 0; k < geschosszahl; k++) {
-      const y = k * geschossHoehe + geschossHoehe / 2;
-      for (let j = 0; j < rastervorlageTiefe.length - 1; j++) {
-        const z1 = rastervorlageTiefe[j] - tiefe / 2;
-        const z2 = rastervorlageTiefe[j + 1] - tiefe / 2;
-        const laenge = z2 - z1;
-        const traegerGeometrie = new THREE.BoxGeometry(0.1, 0.1, laenge);
-        const traegerObjekt = new THREE.Mesh(traegerGeometrie, materialTragwerk);
-        traegerObjekt.position.set(x, y, (z1 + z2) / 2);
-        konfiguratorGruppe.add(traegerObjekt);
-        traeger.push(traegerObjekt);
-      }
+  const x = rastervorlageBreite[i] - breite / 2;
+  for (let k = 0; k < geschosszahl; k++) {
+    const y = k * geschossHoehe + geschossHoehe / 2;
+    for (let j = 0; j < rastervorlageTiefe.length - 1; j++) {
+      const z1 = rastervorlageTiefe[j] - tiefe / 2;
+      const z2 = rastervorlageTiefe[j + 1] - tiefe / 2;
+      const laenge = z2 - z1;
+      const traegerGeometrie = new THREE.BoxGeometry(0.1, 0.1, laenge);
+      const traegerObjekt = new THREE.Mesh(traegerGeometrie, materialTragwerk);
+      traegerObjekt.position.set(x, y, (z1 + z2) / 2);
+      konfiguratorGruppe.add(traegerObjekt);
+      traeger.push(traegerObjekt);
     }
   }
+}
 
   // ✅ Full building: walls, roof, floor
   const wandMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
