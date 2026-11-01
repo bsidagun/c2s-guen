@@ -452,6 +452,62 @@ function buildKonfigurator() {
     konfiguratorGruppe.add(decke);
   }
 
+  // ✅ Interior functional zones (visible through windows)
+  const zonenMaterial = {
+    wohnen: new THREE.MeshStandardMaterial({ color: 0xF5DEB3, transparent: true, opacity: 0.6 }),
+    privat: new THREE.MeshStandardMaterial({ color: 0xE2725B, transparent: true, opacity: 0.6 }),
+    gemeinsam: new THREE.MeshStandardMaterial({ color: 0x8FBC8F, transparent: true, opacity: 0.6 }),
+    neben: new THREE.MeshStandardMaterial({ color: 0xA9A9A9, transparent: true, opacity: 0.6 }),
+    verkehr: new THREE.MeshStandardMaterial({ color: 0x7B8FA3, transparent: true, opacity: 0.6 })
+  };
+
+  for (let k = 0; k < geschosszahl; k++) {
+    const y = k * geschossHoehe + geschossHoehe / 2;
+
+    if (k === 0) {
+      // Ground floor: public/commercial zone
+      const zone = new THREE.Mesh(
+        new THREE.BoxGeometry(breite * 0.8, 0.05, tiefe * 0.8),
+        zonenMaterial.gemeinsam
+      );
+      zone.position.set(0, y - geschossHoehe / 2 + 0.1, tiefe / 2);
+      konfiguratorGruppe.add(zone);
+    } else {
+      // Upper floors: residential zones
+      // Living zone (front)
+      const wohnen = new THREE.Mesh(
+        new THREE.BoxGeometry(breite * 0.5, 0.05, tiefe * 0.4),
+        zonenMaterial.wohnen
+      );
+      wohnen.position.set(-breite * 0.15, y - geschossHoehe / 2 + 0.1, tiefe * 0.3);
+      konfiguratorGruppe.add(wohnen);
+
+      // Private zone (back)
+      const privat = new THREE.Mesh(
+        new THREE.BoxGeometry(breite * 0.4, 0.05, tiefe * 0.3),
+        zonenMaterial.privat
+      );
+      privat.position.set(breite * 0.15, y - geschossHoehe / 2 + 0.1, tiefe * 0.7);
+      konfiguratorGruppe.add(privat);
+
+      // Circulation zone (side)
+      const verkehr = new THREE.Mesh(
+        new THREE.BoxGeometry(breite * 0.2, 0.05, tiefe * 0.8),
+        zonenMaterial.verkehr
+      );
+      verkehr.position.set(-breite * 0.35, y - geschossHoehe / 2 + 0.1, tiefe / 2);
+      konfiguratorGruppe.add(verkehr);
+
+      // Ancillary zone
+      const neben = new THREE.Mesh(
+        new THREE.BoxGeometry(breite * 0.2, 0.05, tiefe * 0.3),
+        zonenMaterial.neben
+      );
+      neben.position.set(breite * 0.35, y - geschossHoehe / 2 + 0.1, tiefe * 0.7);
+      konfiguratorGruppe.add(neben);
+    }
+  }
+
   // ✅ Facade with real window openings
   const wandMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
   const fensterMaterial = new THREE.MeshStandardMaterial({ color: 0xADD8E6, roughness: 0.3, transparent: true, opacity: 0.8 });
@@ -473,24 +529,24 @@ function buildKonfigurator() {
       for (let k = 0; k < geschosszahl; k++) {
         const y = k * geschossHoehe + geschossHoehe / 2;
 
-        // Wall below window
+        // Wall below window (reduced height)
         const wallBelow = new THREE.Mesh(
-          new THREE.BoxGeometry(laenge, geschossHoehe * 0.4, 0.1),
-          wandMaterial
-        );
-        wallBelow.position.set((x1 + x2) / 2, y - geschossHoehe * 0.3, zPos);
-        konfiguratorGruppe.add(wallBelow);
-
-        // Wall above window
-        const wallAbove = new THREE.Mesh(
           new THREE.BoxGeometry(laenge, geschossHoehe * 0.3, 0.1),
           wandMaterial
         );
-        wallAbove.position.set((x1 + x2) / 2, y + geschossHoehe * 0.35, zPos);
+        wallBelow.position.set((x1 + x2) / 2, y - geschossHoehe * 0.35, zPos);
+        konfiguratorGruppe.add(wallBelow);
+
+        // Wall above window (reduced height)
+        const wallAbove = new THREE.Mesh(
+          new THREE.BoxGeometry(laenge, geschossHoehe * 0.2, 0.1),
+          wandMaterial
+        );
+        wallAbove.position.set((x1 + x2) / 2, y + geschossHoehe * 0.4, zPos);
         konfiguratorGruppe.add(wallAbove);
 
-        // Window opening
-        const fensterBreite = laenge * 0.6;
+        // Window opening (larger)
+        const fensterBreite = laenge * 0.7;
         const fensterHoehe = geschossHoehe * 0.5;
         const fenster = new THREE.Mesh(
           new THREE.BoxGeometry(fensterBreite, fensterHoehe, 0.05),
@@ -520,8 +576,9 @@ function buildKonfigurator() {
   wand4.position.set(breite / 2, hoehe / 2, tiefe / 2);
   konfiguratorGruppe.add(wand4);
 
-  // ✅ Balconies on street facade (Z = 0)
+  // ✅ Balconies on street facade (Z = 0) with railings
   const balkonMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.7 });
+  const railingMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
   const balkonTiefe = 1.2;
   const balkonBreite = rastertiefe * 0.8;
 
@@ -539,14 +596,40 @@ function buildKonfigurator() {
       balkon.position.set(x, y - geschossHoehe / 2, -balkonTiefe / 2);
       konfiguratorGruppe.add(balkon);
 
-      // Balcony railing
-      const railingMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
-      const railing = new THREE.Mesh(
-        new THREE.BoxGeometry(balkonBreite, 0.8, 0.05),
+      // Balcony railing - front edge
+      const railingFront = new THREE.Mesh(
+        new THREE.BoxGeometry(balkonBreite, 1.0, 0.05),
         railingMaterial
       );
-      railing.position.set(x, y - geschossHoehe / 2 + 0.4, -balkonTiefe);
-      konfiguratorGruppe.add(railing);
+      railingFront.position.set(x, y - geschossHoehe / 2 + 0.5, -balkonTiefe);
+      konfiguratorGruppe.add(railingFront);
+
+      // Balcony railing - left side
+      const railingLeft = new THREE.Mesh(
+        new THREE.BoxGeometry(0.05, 1.0, balkonTiefe),
+        railingMaterial
+      );
+      railingLeft.position.set(x - balkonBreite / 2, y - geschossHoehe / 2 + 0.5, -balkonTiefe / 2);
+      konfiguratorGruppe.add(railingLeft);
+
+      // Balcony railing - right side
+      const railingRight = new THREE.Mesh(
+        new THREE.BoxGeometry(0.05, 1.0, balkonTiefe),
+        railingMaterial
+      );
+      railingRight.position.set(x + balkonBreite / 2, y - geschossHoehe / 2 + 0.5, -balkonTiefe / 2);
+      konfiguratorGruppe.add(railingRight);
+
+      // Balcony railing - vertical posts
+      for (let p = 0; p < 4; p++) {
+        const postX = x - balkonBreite / 2 + (p / 3) * balkonBreite;
+        const post = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.02, 0.02, 1.0, 4),
+          railingMaterial
+        );
+        post.position.set(postX, y - geschossHoehe / 2 + 0.5, -balkonTiefe);
+        konfiguratorGruppe.add(post);
+      }
     }
   }
 
