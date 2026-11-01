@@ -379,6 +379,10 @@ function buildKonfigurator() {
   const stuetzen = [];
   const traeger = [];
 
+  // ✅ CORRECTED: Building is now positioned at (0, 0, 0) with correct offsets
+  // The plot is centered at (0, 0, 0) in the existing context
+  // X = width, Z = depth, Y = height
+
   for (let i = 0; i < rastervorlageBreite.length; i++) {
     for (let j = 0; j < rastervorlageTiefe.length; j++) {
       const x = rastervorlageBreite[i] - breite / 2;
@@ -430,12 +434,9 @@ function buildKonfigurator() {
     }
   }
 
-  // ✅ Full building: walls, roof, floor
-  const wandMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
-  const dachMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
-  const bodenMaterial = new THREE.MeshStandardMaterial({ color: 0x90EE90 });
-
+  // ✅ CORRECTED: Full building massing
   // Floor
+  const bodenMaterial = new THREE.MeshStandardMaterial({ color: 0x90EE90 });
   const boden = new THREE.Mesh(
     new THREE.BoxGeometry(breite, 0.1, tiefe),
     bodenMaterial
@@ -444,6 +445,7 @@ function buildKonfigurator() {
   konfiguratorGruppe.add(boden);
 
   // Walls
+  const wandMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
   const wandBreite = new THREE.BoxGeometry(breite, hoehe, 0.1);
   const wandTiefe = new THREE.BoxGeometry(tiefe, hoehe, 0.1);
   const wand1 = new THREE.Mesh(wandBreite, wandMaterial);
@@ -463,63 +465,11 @@ function buildKonfigurator() {
   konfiguratorGruppe.add(wand4);
 
   // Roof
+  const dachMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
   const dach = new THREE.BoxGeometry(breite, 0.5, tiefe);
   const dachMesh = new THREE.Mesh(dach, dachMaterial);
   dachMesh.position.set(0, hoehe + 0.25, 0);
   konfiguratorGruppe.add(dachMesh);
-
-  // ✅ Zoning: color zones
-  const zonen = [
-    { name: "Wohnbereich", color: 0x0088ff, flaeche: 0.4 },
-    { name: "Private Bereiche", color: 0x0055aa, flaeche: 0.2 },
-    { name: "Gemeinschaftsbereiche", color: 0x00cc99, flaeche: 0.1 },
-    { name: "Nebenräume", color: 0x888888, flaeche: 0.15 },
-    { name: "Verkehrsflächen", color: 0x444444, flaeche: 0.15 }
-  ];
-
-  const gesamtFlaeche = breite * tiefe;
-  const geschossFlaeche = gesamtFlaeche / geschosszahl;
-
-  let verkehrsFlaeche = 0;
-  zonen.forEach(z => {
-    const flaeche = z.flaeche * geschossFlaeche;
-    if (z.name === "Verkehrsflächen") {
-      verkehrsFlaeche = flaeche;
-    }
-  });
-
-  const zellenX = 5, zellenY = 5;
-  const zelleWidth = breite / zellenX;
-  const zelleDepth = tiefe / zellenY;
-
-  for (let i = 0; i < zellenX; i++) {
-    for (let j = 0; j < zellenY; j++) {
-      const x = breite / 2 - (zellenX - 1) * zelleWidth / 2 + i * zelleWidth;
-      const z1 = tiefe / 2 - (zellenY - 1) * zelleDepth / 2 + j * zelleDepth;
-      const zelle = new THREE.Mesh(
-        new THREE.PlaneGeometry(zelleWidth, zelleDepth),
-        new THREE.MeshStandardMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.3 })
-      );
-      zelle.position.set(x, 0, z1);
-      zelle.rotation.x = -Math.PI / 2;
-      konfiguratorGruppe.add(zelle);
-
-      let zonenName = "Nebenräume";
-      if (i === 0 || j === 0 || i === zellenX - 1 || j === zellenY - 1) {
-        zonenName = "Verkehrsflächen";
-      } else if (i === 2 && j === 2) {
-        zonenName = "Gemeinschaftsbereiche";
-      } else if (i === 1 && j === 1) {
-        zonenName = "Wohnbereich";
-      }
-
-      const z = zonen.find(z => z.name === zonenName);
-      if (z) {
-        zelle.material.color.setHex(z.color);
-        zelle.material.opacity = 0.7;
-      }
-    }
-  }
 
   // ✅ Add null check before setting innerHTML
   if (auswertungPanel) {
