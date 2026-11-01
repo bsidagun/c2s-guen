@@ -492,21 +492,26 @@ function buildKonfigurator() {
     }
   }
 
-  auswertungPanel.innerHTML = `
-    <h3>Ergebnisse</h3>
-    <p><strong>Geschosszahl:</strong> ${geschosszahl}</p>
-    <p><strong>BRI:</strong> ${bri.toFixed(2)}</p>
-    <p><strong>BGF:</strong> ${bgf.toFixed(2)} m²</p>
-    <p><strong>Grundfläche:</strong> ${grundflaeche.toFixed(2)} m²</p>
-    <p><strong>GRZ:</strong> ${grz.toFixed(2)}</p>
-    <p><strong>GFZ:</strong> ${gfz.toFixed(2)}</p>
-    <p><strong>A/V-Verhältnis:</strong> ${avVerhaeltnis.toFixed(2)}</p>
-    <p><strong>CO₂-Emissionen:</strong> ca. ${geschätzteCo2.toFixed(0)} kg (geschätzt)</p>
-    <p><strong>Kosten:</strong> ca. ${geschätzteKosten.toFixed(0)} € (geschätzt)</p>
-    <p><strong>Tragwerksraster:</strong> ${rastertyp} (${rastertiefe} m)</p>
-    <p><strong>Material:</strong> ${materialTyp}</p>
-    <p><strong>Eigenes Kriterium:</strong> ${eigenesKriterium().ergebnis}</p>
-  `;
+  // ✅ Add null check before setting innerHTML
+  if (auswertungPanel) {
+    auswertungPanel.innerHTML = `
+      <h3>Ergebnisse</h3>
+      <p><strong>Geschosszahl:</strong> ${geschosszahl}</p>
+      <p><strong>BRI:</strong> ${bri.toFixed(2)}</p>
+      <p><strong>BGF:</strong> ${bgf.toFixed(2)} m²</p>
+      <p><strong>Grundfläche:</strong> ${grundflaeche.toFixed(2)} m²</p>
+      <p><strong>GRZ:</strong> ${grz.toFixed(2)}</p>
+      <p><strong>GFZ:</strong> ${gfz.toFixed(2)}</p>
+      <p><strong>A/V-Verhältnis:</strong> ${avVerhaeltnis.toFixed(2)}</p>
+      <p><strong>CO₂-Emissionen:</strong> ca. ${geschätzteCo2.toFixed(0)} kg (geschätzt)</p>
+      <p><strong>Kosten:</strong> ca. ${geschätzteKosten.toFixed(0)} € (geschätzt)</p>
+      <p><strong>Tragwerksraster:</strong> ${rastertyp} (${rastertiefe} m)</p>
+      <p><strong>Material:</strong> ${materialTyp}</p>
+      <p><strong>Eigenes Kriterium:</strong> ${eigenesKriterium().ergebnis}</p>
+    `;
+  } else {
+    console.error("Element 'auswertung' not found in the DOM.");
+  }
 }
 // ==================================================================
 //  === ENDE IHR KONFIGURATOR ===
