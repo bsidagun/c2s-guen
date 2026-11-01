@@ -421,7 +421,7 @@ function buildKonfigurator() {
       const y = k * geschossHoehe + geschossHoehe / 2;
       for (let j = 0; j < rastervorlageTiefe.length - 1; j++) {
         const z1 = rastervorlageTiefe[j] - tiefe / 2;
-        const z2 = rastervorlageTiefe[j + 1] - tiefe / 2; // ← Changed from z to z2
+        const z2 = rastervorlageTiefe[j + 1] - tiefe / 2;
         const laenge = z2 - z1;
         const traegerGeometrie = new THREE.BoxGeometry(0.1, 0.1, laenge);
         const traegerObjekt = new THREE.Mesh(traegerGeometrie, materialTragwerk);
