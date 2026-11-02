@@ -568,71 +568,23 @@ function buildKonfigurator() {
     verkehr: new THREE.MeshStandardMaterial({ color: 0x7B8FA3, transparent: true, opacity: 0.6 })
   };
 
-  // ✅ Declare variables outside loop
-  let wohnenFlaeche = 0;
-  let privatFlaeche = 0;
-  let gemeinsamFlaeche = 0;
-  let nebenFlaeche = 0;
-  let verkehrFlaeche = 0;
-
   // ✅ Loop over floors with proper `let k`
   for (let k = 0; k < geschosszahl; k++) {
     const y = k * geschossHoehe + geschossHoehe / 2;
     const floorData = floorPlans[k];
     if (!floorData) continue;
 
-    wohnenFlaeche = floorData.wohnen;
-    privatFlaeche = floorData.privat;
-    gemeinsamFlaeche = floorData.gemeinsam;
-    nebenFlaeche = floorData.neben;
-    verkehrFlaeche = floorData.verkehr;
+    const zoneLayout = calculateZoneLayout(floorData, { breite, tiefe }, P.nord);
 
-    const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
-    const maxVerkehrsFlaeche = breite * tiefe * maxVerkehrAnteil;
-    const tatsaechlicheVerkehrsFlaeche = Math.min(verkehrFlaeche, maxVerkehrsFlaeche);
+    zoneLayout.forEach(zone => {
+      const { x, z, width, depth, type, area } = zone;
 
-    const totalFlaeche = wohnenFlaeche + privatFlaeche + gemeinsamFlaeche + nebenFlaeche + tatsaechlicheVerkehrsFlaeche;
-
-    // ✅ Sun direction based on nord
-    const nord = parseFloat(document.getElementById('nord').value);
-    const sunAngle = (nord + 180) * DEG;
-
-    // ✅ Zone positioning based on sun
-    const wohnen = new THREE.Mesh(
-      new THREE.BoxGeometry(breite * 0.5 * (wohnenFlaeche / totalFlaeche) * 2, 0.05, tiefe * 0.4),
-      zonenMaterial.wohnen
-    );
-    wohnen.position.set(-breite * 0.15, y - geschossHoehe / 2 + 0.1, tiefe * 0.3);
-    konfiguratorGruppe.add(wohnen);
-
-    const privat = new THREE.Mesh(
-      new THREE.BoxGeometry(breite * 0.4 * (privatFlaeche / totalFlaeche) * 2, 0.05, tiefe * 0.3),
-      zonenMaterial.privat
-    );
-    privat.position.set(breite * 0.15, y - geschossHoehe / 2 + 0.1, tiefe * 0.7);
-    konfiguratorGruppe.add(privat);
-
-    const verkehr = new THREE.Mesh(
-      new THREE.BoxGeometry(breite * 0.2 * (tatsaechlicheVerkehrsFlaeche / totalFlaeche) * 2, 0.05, tiefe * 0.8),
-      zonenMaterial.verkehr
-    );
-    verkehr.position.set(-breite * 0.35, y - geschossHoehe / 2 + 0.1, tiefe / 2);
-    konfiguratorGruppe.add(verkehr);
-
-    const neben = new THREE.Mesh(
-      new THREE.BoxGeometry(breite * 0.2 * (nebenFlaeche / totalFlaeche) * 2, 0.05, tiefe * 0.3),
-      zonenMaterial.neben
-    );
-    neben.position.set(breite * 0.35, y - geschossHoehe / 2 + 0.1, tiefe * 0.7);
-    konfiguratorGruppe.add(neben);
-
-    // ✅ Gemeinschaftsbereiche
-    const gemeinsam = new THREE.Mesh(
-      new THREE.BoxGeometry(breite * 0.8 * (gemeinsamFlaeche / totalFlaeche) * 2, 0.05, tiefe * 0.8),
-      zonenMaterial.gemeinsam
-    );
-    gemeinsam.position.set(0, y - geschossHoehe / 2 + 0.1, tiefe / 2);
-    konfiguratorGruppe.add(gemeinsam);
+      const geometry = new THREE.BoxGeometry(width, 0.05, depth);
+      const material = zonenMaterial[type];
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(x, y - geschossHoehe / 2 + 0.1, z);
+      konfiguratorGruppe.add(mesh);
+    });
   }
 
   // ✅ Interior partition walls
@@ -1055,52 +1007,30 @@ function drawFloorPlan(floorIndex) {
   const floorData = floorPlans[floorIndex];
   if (!floorData) return;
 
-  const wohnenFlaeche = floorData.wohnen;
-  const privatFlaeche = floorData.privat;
-  const gemeinsamFlaeche = floorData.gemeinsam;
-  const nebenFlaeche = floorData.neben;
-  const verkehrFlaeche = floorData.verkehr;
+  const zoneLayout = calculateZoneLayout(floorData, { breite, tiefe }, P.nord);
 
-  // ✅ Limit traffic area
-  const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
-  const maxVerkehrsFlaeche = breite * tiefe * maxVerkehrAnteil;
-  const tatsaechlicheVerkehrsFlaeche = Math.min(verkehrFlaeche, maxVerkehrsFlaeche);
+  zoneLayout.forEach(zone => {
+    const { x, z, width, depth, type, area } = zone;
 
-  const totalFlaeche = wohnenFlaeche + privatFlaeche + gemeinsamFlaeche + nebenFlaeche + tatsaechlicheVerkehrsFlaeche;
+    const xPx = offsetX + (x + breite / 2) * scale;
+    const zPx = offsetY + (z + tiefe / 2) * scale;
+    const wPx = width * scale;
+    const hPx = depth * scale;
 
-  // ✅ Sun direction
-  const nord = parseFloat(document.getElementById('nord').value);
-  const sunAngle = (nord + 180) * DEG;
-
-  // ✅ Zone positioning
-  const zones = [
-    { name: 'Wohnen', color: '#F5DEB3', x: 0.05, y: 0.05, w: wohnenFlaeche / totalFlaeche * 0.5, h: 0.4 },
-    { name: 'Privat', color: '#E2725B', x: 0.05, y: 0.55, w: privatFlaeche / totalFlaeche * 0.4, h: 0.3 },
-    { name: 'Gemeinschaft', color: '#8FBC8F', x: 0.55, y: 0.05, w: gemeinsamFlaeche / totalFlaeche * 0.3, h: 0.3 },
-    { name: 'Neben', color: '#A9A9A9', x: 0.55, y: 0.55, w: nebenFlaeche / totalFlaeche * 0.3, h: 0.3 },
-    { name: 'Verkehr', color: '#7B8FA3', x: 0.05, y: 0.05, w: tatsaechlicheVerkehrsFlaeche / totalFlaeche * 0.15, h: 0.8 }
-  ];
-
-  zones.forEach(zone => {
-    const x = offsetX + zone.x * breite * scale;
-    const y = offsetY + zone.y * tiefe * scale;
-    const w = zone.w * breite * scale;
-    const h = zone.h * tiefe * scale;
-
-    const clampedW = Math.min(w, offsetX + breite * scale - x);
-    const clampedH = Math.min(h, offsetY + tiefe * scale - y);
-
-    ctx.fillStyle = zone.color;
-    ctx.fillRect(x, y, clampedW, clampedH);
+    ctx.fillStyle = getZoneColor(type);
+    ctx.fillRect(xPx, zPx, wPx, hPx);
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
-    ctx.strokeRect(x, y, clampedW, clampedH);
+    ctx.strokeRect(xPx, zPx, wPx, hPx);
 
     ctx.fillStyle = '#333';
     ctx.font = '9px Arial';
-    const label = zone.name.length > 8 ? zone.name.substring(0, 6) + '...' : zone.name;
-    ctx.fillText(label, x + 2, y + 10);
-    ctx.fillText(`${Math.round(zone.w * zone.h * breite * tiefe)} m²`, x + 2, y + 20);
+    const label = type === 'wohnen' ? 'Wohnen' : 
+                  type === 'privat' ? 'Privat' :
+                  type === 'gemeinsam' ? 'Gemeins.' :
+                  type === 'neben' ? 'Neben' : 'Verkehr';
+    ctx.fillText(label, xPx + 2, zPx + 10);
+    ctx.fillText(`${Math.round(area)} m²`, xPx + 2, zPx + 20);
   });
 
   // Draw stair core
@@ -1124,7 +1054,7 @@ function drawFloorPlan(floorIndex) {
 
   ctx.save();
   ctx.translate(arrowX, arrowY);
-  ctx.rotate(-nord * DEG);
+  ctx.rotate(-P.nord * DEG);
 
   ctx.strokeStyle = '#ff0000';
   ctx.lineWidth = 2;
@@ -1146,6 +1076,131 @@ function drawFloorPlan(floorIndex) {
   ctx.fillText('N', -3, -arrowLen / 2 - 4);
 
   ctx.restore();
+}
+
+function getZoneColor(type) {
+  switch (type) {
+    case 'wohnen': return '#F5DEB3';
+    case 'privat': return '#E2725B';
+    case 'gemeinsam': return '#8FBC8F';
+    case 'neben': return '#A9A9A9';
+    case 'verkehr': return '#7B8FA3';
+    default: return '#CCCCCC';
+  }
+}
+
+// ✅ Zone Layout Calculation
+function calculateZoneLayout(floorData, dimensions, nord) {
+  const { breite, tiefe } = dimensions;
+  const totalFlaeche = floorData.wohnen + floorData.privat + floorData.gemeinsam + floorData.neben + floorData.verkehr;
+
+  if (totalFlaeche === 0) return [];
+
+  const verkehrFlaeche = floorData.verkehr;
+  const wohnenFlaeche = floorData.wohnen;
+  const privatFlaeche = floorData.privat;
+  const gemeinsamFlaeche = floorData.gemeinsam;
+  const nebenFlaeche = floorData.neben;
+
+  const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
+  const maxVerkehrsFlaeche = breite * tiefe * maxVerkehrAnteil;
+  const tatsaechlicheVerkehrsFlaeche = Math.min(verkehrFlaeche, maxVerkehrsFlaeche);
+
+  const verkehrArea = Math.max(0, Math.min(tatsaechlicheVerkehrsFlaeche, breite * tiefe * 0.2));
+  const verkehrWidth = Math.min(3, verkehrArea / 2);
+  const verkehrDepth = verkehrArea / verkehrWidth;
+
+  const verkehrX = -breite / 2 + verkehrWidth / 2;
+  const verkehrZ = -tiefe / 2 + verkehrDepth / 2;
+
+  const verkehrZone = {
+    x: verkehrX,
+    z: verkehrZ,
+    width: verkehrWidth,
+    depth: verkehrDepth,
+    type: 'verkehr',
+    area: verkehrArea
+  };
+
+  const remainingArea = totalFlaeche - verkehrArea;
+  const remainingWidth = breite - verkehrWidth;
+  const remainingDepth = tiefe;
+
+  const wohnenArea = Math.max(0, wohnenFlaeche);
+  const privatArea = Math.max(0, privatFlaeche);
+  const gemeinsamArea = Math.max(0, gemeinsamFlaeche);
+  const nebenArea = Math.max(0, nebenFlaeche);
+
+  const totalRemaining = wohnenArea + privatArea + gemeinsamArea + nebenArea;
+
+  if (totalRemaining === 0) return [verkehrZone];
+
+  const wohnenWidth = Math.min(remainingWidth, 6);
+  const wohnenDepth = wohnenArea / wohnenWidth;
+  const wohnenX = -breite / 2 + wohnenWidth / 2;
+  const wohnenZ = -tiefe / 2 + wohnenDepth / 2;
+
+  const wohnenZone = {
+    x: wohnenX,
+    z: wohnenZ,
+    width: wohnenWidth,
+    depth: wohnenDepth,
+    type: 'wohnen',
+    area: wohnenArea
+  };
+
+  const remainingAfterWohnen = totalRemaining - wohnenArea;
+  if (remainingAfterWohnen === 0) return [verkehrZone, wohnenZone];
+
+  const privatWidth = Math.min(remainingWidth, 4);
+  const privatDepth = privatArea / privatWidth;
+  const privatX = -breite / 2 + privatWidth / 2;
+  const privatZ = -tiefe / 2 + wohnenDepth + privatDepth / 2;
+
+  const privatZone = {
+    x: privatX,
+    z: privatZ,
+    width: privatWidth,
+    depth: privatDepth,
+    type: 'privat',
+    area: privatArea
+  };
+
+  const remainingAfterPrivat = remainingAfterWohnen - privatArea;
+  if (remainingAfterPrivat === 0) return [verkehrZone, wohnenZone, privatZone];
+
+  const gemeinsamWidth = Math.min(remainingWidth, 4);
+  const gemeinsamDepth = gemeinsamArea / gemeinsamWidth;
+  const gemeinsamX = -breite / 2 + gemeinsamWidth / 2;
+  const gemeinsamZ = -tiefe / 2 + wohnenDepth + privatDepth + gemeinsamDepth / 2;
+
+  const gemeinsamZone = {
+    x: gemeinsamX,
+    z: gemeinsamZ,
+    width: gemeinsamWidth,
+    depth: gemeinsamDepth,
+    type: 'gemeinsam',
+    area: gemeinsamArea
+  };
+
+  const remainingAfterGemeinsam = remainingAfterPrivat - gemeinsamArea;
+  if (remainingAfterGemeinsam === 0) return [verkehrZone, wohnenZone, privatZone, gemeinsamZone];
+
+  const nebenWidth = Math.min(remainingWidth, 4);
+  const nebenDepth = nebenArea / nebenWidth;
+  const nebenX = -breite / 2 + nebenWidth / 2;
+  const nebenZ = -tiefe / 2 + wohnenDepth + privatDepth + gemeinsamDepth + nebenDepth / 2;
+
+  const nebenZone = {
+    x: nebenX,
+    z: nebenZ,
+    width: nebenWidth,
+    depth: nebenDepth,
+    type: 'neben',
+    area: nebenArea
+  };
+
+  return [verkehrZone, wohnenZone, privatZone, gemeinsamZone, nebenZone];
 }
 
 function buildMasse() {
