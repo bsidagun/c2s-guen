@@ -74,6 +74,67 @@
     <input type="range" id="traufe" min="9" max="21" step="1.5" value="15" />
   </div>
 
+  <div class="div">Tragwerk</div>
+  <div class="row">
+    <label>Material</label>
+    <select id="material">
+      <option value="holz">Holz</option>
+      <option value="stahl">Stahl</option>
+      <option value="stahlbeton" selected>Stahlbeton</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>Tragwerksraster</label>
+    <select id="raster">
+      <option value="klein">2,50 m</option>
+      <option value="mittler" selected>3,00 m</option>
+      <option value="groß">3,50 m</option>
+    </select>
+  </div>
+
+  <div class="div">Fassade</div>
+  <div class="row">
+    <label>Fensterflächenanteil <b><span id="vFenster">40</span> %</b></label>
+    <input type="range" id="fensteranteil" min="20" max="60" step="5" value="40" />
+  </div>
+  <div class="row">
+    <label>Balkone</label>
+    <select id="balkon">
+      <option value="true" selected>An</option>
+      <option value="false">Aus</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>Balkontiefe <b><span id="vBalkonTiefe">1.2</span> m</b></label>
+    <input type="range" id="balkonTiefe" min="0.8" max="1.8" step="0.1" value="1.2" />
+  </div>
+
+  <div class="div">Nutzungsflächen</div>
+  <div class="row">
+    <label>Wohnbereiche (m²)</label>
+    <input type="number" id="wohnen" value="80" min="0" step="5" />
+  </div>
+  <div class="row">
+    <label>Private Bereiche (m²)</label>
+    <input type="number" id="privat" value="40" min="0" step="5" />
+  </div>
+  <div class="row">
+    <label>Gemeinschaftsbereiche (m²)</label>
+    <input type="number" id="gemeinsam" value="20" min="0" step="5" />
+  </div>
+  <div class="row">
+    <label>Nebenräume (m²)</label>
+    <input type="number" id="neben" value="30" min="0" step="5" />
+  </div>
+  <div class="row">
+    <label>Verkehrsflächen (m²)</label>
+    <input type="number" id="verkehr" value="30" min="0" step="5" />
+  </div>
+  <div class="row">
+    <label>Max. Verkehrsflächenanteil <b><span id="vVerkehrAnteil">20</span> %</b></label>
+    <input type="range" id="verkehrAnteil" min="10" max="40" step="5" value="20" />
+  </div>
+
   <div class="div">Umgebung</div>
   <div class="row">
     <label>Straßenbreite <b><span id="vStrasse">10</span> m</b></label>
@@ -322,9 +383,12 @@ function buildKonfigurator() {
   const breite = parseFloat(document.getElementById('breite').value);
   const tiefe = parseFloat(document.getElementById('tiefe').value);
   const hoehe = parseFloat(document.getElementById('traufe').value);
-  const rastertyp = document.querySelector('input[name="raster"]:checked')?.value || 'mittler';
+  const rastertyp = document.getElementById('raster').value || 'mittler';
   const rastertiefe = rasterOptionen[rastertyp];
-  const materialTyp = document.querySelector('input[name="material"]:checked')?.value || 'stahlbeton';
+  const materialTyp = document.getElementById('material').value || 'stahlbeton';
+  const fensteranteil = parseFloat(document.getElementById('fensteranteil').value) / 100;
+  const balkonAktiv = document.getElementById('balkon').value === 'true';
+  const balkonTiefe = parseFloat(document.getElementById('balkonTiefe').value);
 
   let materialTragwerk;
   switch (materialTyp) {
@@ -625,59 +689,60 @@ function buildKonfigurator() {
   wand4.position.set(breite / 2 + 0.15, hoehe / 2, tiefe / 2);
   konfiguratorGruppe.add(wand4);
 
-  // ✅ Balconies on street facade (Z = 0) with railings
+   // ✅ Balconies on street facade (Z = 0) with railings
   const balkonMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.7 });
   const railingMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
-  const balkonTiefe = 1.2;
   const balkonBreite = rastertiefe * 0.8;
 
-  for (let i = 0; i < rastervorlageBreite.length - 1; i++) {
-    const x = (rastervorlageBreite[i] + rastervorlageBreite[i + 1]) / 2 - breite / 2;
+  if (balkonAktiv) {
+    for (let i = 0; i < rastervorlageBreite.length - 1; i++) {
+      const x = (rastervorlageBreite[i] + rastervorlageBreite[i + 1]) / 2 - breite / 2;
 
-    for (let k = 1; k < geschosszahl; k++) {
-      const y = k * geschossHoehe + geschossHoehe / 2;
+      for (let k = 1; k < geschosszahl; k++) {
+        const y = k * geschossHoehe + geschossHoehe / 2;
 
-      // Balcony floor
-      const balkon = new THREE.Mesh(
-        new THREE.BoxGeometry(balkonBreite, 0.1, balkonTiefe),
-        balkonMaterial
-      );
-      balkon.position.set(x, y - geschossHoehe / 2, -balkonTiefe / 2);
-      konfiguratorGruppe.add(balkon);
+        // Balcony floor
+        const balkon = new THREE.Mesh(
+          new THREE.BoxGeometry(balkonBreite, 0.1, balkonTiefe),
+          balkonMaterial
+        );
+        balkon.position.set(x, y - geschossHoehe / 2, -balkonTiefe / 2);
+        konfiguratorGruppe.add(balkon);
 
-      // Balcony railing - front edge
-      const railingFront = new THREE.Mesh(
-        new THREE.BoxGeometry(balkonBreite, 1.05, 0.05),
-        railingMaterial
-      );
-      railingFront.position.set(x, y - geschossHoehe / 2 + 0.525, -balkonTiefe);
-      konfiguratorGruppe.add(railingFront);
-
-      // Balcony railing - left side
-      const railingLeft = new THREE.Mesh(
-        new THREE.BoxGeometry(0.05, 1.05, balkonTiefe),
-        railingMaterial
-      );
-      railingLeft.position.set(x - balkonBreite / 2, y - geschossHoehe / 2 + 0.525, -balkonTiefe / 2);
-      konfiguratorGruppe.add(railingLeft);
-
-      // Balcony railing - right side
-      const railingRight = new THREE.Mesh(
-        new THREE.BoxGeometry(0.05, 1.05, balkonTiefe),
-        railingMaterial
-      );
-      railingRight.position.set(x + balkonBreite / 2, y - geschossHoehe / 2 + 0.525, -balkonTiefe / 2);
-      konfiguratorGruppe.add(railingRight);
-
-      // Balcony railing - vertical posts
-      for (let p = 0; p < 4; p++) {
-        const postX = x - balkonBreite / 2 + (p / 3) * balkonBreite;
-        const post = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.02, 0.02, 1.05, 4),
+        // Balcony railing - front edge
+        const railingFront = new THREE.Mesh(
+          new THREE.BoxGeometry(balkonBreite, 1.05, 0.05),
           railingMaterial
         );
-        post.position.set(postX, y - geschossHoehe / 2 + 0.525, -balkonTiefe);
-        konfiguratorGruppe.add(post);
+        railingFront.position.set(x, y - geschossHoehe / 2 + 0.525, -balkonTiefe);
+        konfiguratorGruppe.add(railingFront);
+
+        // Balcony railing - left side
+        const railingLeft = new THREE.Mesh(
+          new THREE.BoxGeometry(0.05, 1.05, balkonTiefe),
+          railingMaterial
+        );
+        railingLeft.position.set(x - balkonBreite / 2, y - geschossHoehe / 2 + 0.525, -balkonTiefe / 2);
+        konfiguratorGruppe.add(railingLeft);
+
+        // Balcony railing - right side
+        const railingRight = new THREE.Mesh(
+          new THREE.BoxGeometry(0.05, 1.05, balkonTiefe),
+          railingMaterial
+        );
+        railingRight.position.set(x + balkonBreite / 2, y - geschossHoehe / 2 + 0.525, -balkonTiefe / 2);
+        konfiguratorGruppe.add(railingRight);
+
+        // Balcony railing - vertical posts
+        for (let p = 0; p < 4; p++) {
+          const postX = x - balkonBreite / 2 + (p / 3) * balkonBreite;
+          const post = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.02, 0.02, 1.05, 4),
+            railingMaterial
+          );
+          post.position.set(postX, y - geschossHoehe / 2 + 0.525, -balkonTiefe);
+          konfiguratorGruppe.add(post);
+        }
       }
     }
   }
@@ -956,6 +1021,27 @@ document.getElementById('season').addEventListener('change', (e) => { P.decl = p
 const nordEl = document.getElementById('nord');
 nordEl.addEventListener('input', () => { P.nord = parseFloat(nordEl.value); document.getElementById('vNord').textContent = P.nord; buildSonnenbahn(); updateSonne(); });
 document.getElementById('sunpath').addEventListener('change', (e) => { P.sunPath = e.target.checked; buildSonnenbahn(); updateSonne(); });
+  // ✅ New controls event listeners
+document.getElementById('material').addEventListener('change', rebuildGeom);
+document.getElementById('raster').addEventListener('change', rebuildGeom);
+document.getElementById('fensteranteil').addEventListener('input', () => {
+  document.getElementById('vFenster').textContent = document.getElementById('fensteranteil').value;
+  rebuildGeom();
+});
+document.getElementById('balkon').addEventListener('change', rebuildGeom);
+document.getElementById('balkonTiefe').addEventListener('input', () => {
+  document.getElementById('vBalkonTiefe').textContent = document.getElementById('balkonTiefe').value;
+  rebuildGeom();
+});
+document.getElementById('wohnen').addEventListener('input', rebuildGeom);
+document.getElementById('privat').addEventListener('input', rebuildGeom);
+document.getElementById('gemeinsam').addEventListener('input', rebuildGeom);
+document.getElementById('neben').addEventListener('input', rebuildGeom);
+document.getElementById('verkehr').addEventListener('input', rebuildGeom);
+document.getElementById('verkehrAnteil').addEventListener('input', () => {
+  document.getElementById('vVerkehrAnteil').textContent = document.getElementById('verkehrAnteil').value;
+  rebuildGeom();
+});
 
 // ------------------------------------------------------------------
 //  Export (Ihr Ergebnis = konfiguratorGruppe)
