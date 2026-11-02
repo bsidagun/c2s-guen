@@ -1,144 +1,86 @@
-# CARBON TO SILICON
+# Carbon to Silicon
 
-**Stegreif-Aufgabe · Bachelor Architektur · Hochschule Mainz · WS 2026/27**
-Prof. Thomas Mrokon
+**Architekturprojekt · Hochschule Mainz · WS 2026/27**  
 
-*Vom gedanklichen Ursprung zum generativen Entwurfs-Konfigurator*
+## 1. Projektidee und Konzept
 
-> 👉 **Neu bei GitHub oder beim Programmieren?** Starten Sie mit dem interaktiven
-> Onboarding: **https://thomasmrokon.github.io/carbon-to-silicon/onboarding.html**
-> (nach dem Anlegen Ihrer eigenen Kopie auch unter `…ihre-url…/onboarding.html`).
+„Carbon to Silicon“ ist ein interaktiver Gebäude-Konfigurator, mit dem ein architektonischer Entwurf parametrisch entwickelt und in einer 3D-Umgebung visualisiert werden kann.
 
----
+Ziel des Projekts ist es, verschiedene Gebäudeeigenschaften digital zu verändern und die räumlichen sowie gestalterischen Auswirkungen direkt am Gebäudemodell nachvollziehen zu können.
 
-## Worum es geht
+Das Gebäude wird mithilfe von **Three.js** generiert. Die Konfiguration erfolgt über eine Benutzeroberfläche mit verschiedenen Eingabefeldern, Slidern und Auswahlmöglichkeiten.
 
-Agentische KI-Systeme verschieben die Rolle des Architekten: Nicht das manuelle
-Zeichnen oder Programmieren steht im Zentrum, sondern die Fähigkeit, die **Systeme,
-Regeln und Werkzeuge** zu definieren, die Entwürfe hervorbringen. Dieser Stegreif
-erprobt diese Hypothese praktisch – als Brücke von kreativer Intelligenz auf
-Kohlenstoff-Basis (Ihr Kopf als Ursprung) zu technischer Intelligenz auf
-Silicium-Basis (die agentische Umsetzung).
+## 2. Funktionen des Konfigurators
 
-Sie entwickeln **kein fertiges Gebäude, sondern ein funktionierendes generatives
-Werkzeug**: einen Gebäude-Konfigurator, der aus einem **selbst definierten
-Bauteil-Vokabular („Kit of Parts")** nach **Ihren Regeln** in Echtzeit ein drehbares
-3D-Modell erzeugt. Die Geometrie wird aus dem Vokabular zusammengesetzt, nicht frei
-modelliert.
+Folgende Parameter können angepasst werden:
 
-## Der gemeinsame Kontext: eine Baulücke
+### Gebäude und Geometrie
+- Grundstücksbreite und Grundstückstiefe
+- Gebäudehöhe und Geschossanzahl
+- Aufteilung der unterschiedlichen Nutzungsflächen
 
-Für alle gleich – das sichert Vergleichbarkeit und liefert den Widerstand, an dem
-sich Ihr Regelsystem bewährt:
+### Fassade und Gestaltung
+- Fensterflächenanteil zur Veränderung der Fenstergröße bzw. des Verglasungsanteils
+- Balkone und Balkontiefe
+- Tragwerksmaterial
+- Tragwerksraster bzw. Rastergröße
 
-- Innerstädtische **Baulücke im Blockrand**, beidseitig an **Brandwände** grenzend.
-- Breite an der Straße **6–12 m**, Tiefe **bis 25 m**, Traufhöhe im Anschluss an den Bestand
-  (**4–6 Vollgeschosse**).
-- Belichtung nur von **Straßen- und Hofseite**.
-- Die **Grundstücksbreite kann Eingabeparameter** Ihres Konfigurators sein.
+### Nutzungsbereiche
+- Wohnbereiche
+- Private Bereiche
+- Gemeinschaftsbereiche
+- Nebenräume
+- Verkehrsflächen
 
-Der Kontext ist im Scaffold (`index.html`) bereits als 3D-Geometrie hinterlegt und
-**verbindlich**. Ihr Konfigurator baut *in dieses Volumen hinein*. Der Scaffold enthält
-zudem einen **steuerbaren Sonnenstand** (Tageszeit, Jahreszeit, Nordrichtung) mit
-Sonnenbahn und **Schlagschatten**, einen als Dummy-Geometrie modellierten
-**geschlossenen Blockrand mit Innenhof** (Straße auf der einen, Hof auf der anderen Seite)
-sowie die wichtigsten **Umgebungsmaße** (Straßenbreite – 10–20 m regelbar –,
-Innenhof-Tiefe/-Breite) direkt im Modell – nützlich für Verschattungs- und Hofstudien und als
-Basis für ein tageslichtbezogenes eigenes Kriterium. (Die Baulücken-Maße selbst sind über die
-Schieberegler ablesbar.)
+### Umgebung
+- Darstellung der Nachbargebäude und des städtebaulichen Kontexts
+- Grundstück und bebaubares Volumen
+- Anpassung von Sonnenstand und Tageszeit
 
-Das **UI dürfen Sie frei anpassen**; zusätzliche Darstellungen und Auswertungen des Modells
-(Schnitte, Pläne, weitere Kennwerte …) sind ausdrücklich erwünscht.
+## 3. Technische Umsetzung
 
-## Automatische Auswertung (DIN 277 & Kennwerte)
+Das Projekt basiert auf folgenden Technologien:
 
-Der Scaffold misst **live** an Ihrer erzeugten Geometrie und zeigt ein Auswertungs-Panel:
-**DIN 277 auf Massenebene** (BRI, BGF, Grundfläche), **Planungskennwerte** (Geschosse,
-GRZ, GFZ – bezogen auf die Baulücke) sowie das **A/V-Verhältnis** und geschätzte
-**CO₂-** und **Kosten**-Werte (BGF × didaktischer Platzhalterfaktor, im Code anpassbar).
-So liefert Ihr Konfigurator auf Knopfdruck Daten zur ökologischen und ökonomischen
-Vergleichbarkeit, die man sonst mühsam berechnen müsste. (Netto-Flächen nach DIN 277 –
-NUF/VF/TF – sind auf Massenebene nicht ableitbar.)
+- HTML
+- CSS
+- JavaScript
+- Three.js
+- OrbitControls
 
-## Ihr eigenes Bewertungskriterium
+Three.js wird zur Erstellung und Darstellung des Gebäudemodells verwendet. Die Geometrie wird anhand der eingegebenen Parameter generiert und kann interaktiv aus verschiedenen Perspektiven betrachtet werden.
 
-Über die feste Auswertung hinaus definieren Sie **mindestens ein eigenes, vergleichendes
-Kriterium** und bauen es ein. Es muss **quantifizierbar** sein, **live auf Ihre Parameter
-reagieren**, **im Tool angezeigt** werden und in der Reflexion **begründet** sein – *was ein
-guter Entwurf ist, legen damit Sie fest.* Implementiert wird es in der markierten Funktion
-`eigenesKriterium()` in `index.html`; das Ergebnis erscheint im Auswertungs-Panel.
+## 4. Ansichten und aktueller Entwicklungsstand
 
-*Zur Anregung (nicht verpflichtend):* Zirkularität/Rückbaubarkeit, Tageslichtangebot,
-Anteil Flächen mit Außenbezug, Flexibilität/Umnutzbarkeit, Kosten je Nutzeinheit, graue Energie.
+Die Anwendung enthält eine 3D-Modellansicht sowie eine vorgesehene 2D-Grundrissansicht.
 
-## Ablauf
+**Hinweis zum Entwicklungsstand:** Die 2D-Grundrissfunktion ist derzeit noch nicht vollständig funktionsfähig. Der Schwerpunkt der aktuellen Umsetzung liegt auf der 3D-Konfiguration und der Anpassung der Gebäudeparameter.
 
-| Phase | Zeit | Inhalt |
-|---|---|---|
-| Kick-off (Zoom) | Fr, 14:00 | Einführung, technische Voraussetzungen, Werkzeuge |
-| **Offline-Phase (Kohlenstoff)** | Fr, ca. 14:30–20:00 | Kein Internet, keine Fachliteratur, keine KI – nur Kopf, Stift, Papier. Hier entsteht Ihr **Regelsystem**. Analoges Ergebnis bis 20:00 **auf OLAT** einreichen – **vor** jedem KI-Einsatz. |
-| Entwicklung (Silicium) | Sa | Umsetzung mit KI-Agenten zum lauffähigen Konfigurator |
-| Iteration | So | Testen, Bugfixing, README |
-| **Abgabe** | Mo, bis 12:00 | **ZIP auf OLAT**: Repo-Link + Reflexion |
-| Gemeinsame Präsentation | Di, 12:00 (Zoom) | Alle stellen ihre Ergebnisse vor – damit alle die Entwürfe sehen |
+## 5. Testanleitung
 
-## Abgaben
+1. Die Live-Version über den GitHub-Pages-Link öffnen.
+2. Warten, bis die Anwendung geladen ist.
+3. Grundstücksbreite, Grundstückstiefe und Gebäudehöhe verändern.
+4. Die Fensterflächenanteile und Balkoneinstellungen ausprobieren.
+5. Unterschiedliche Materialien und Tragwerksraster auswählen.
+6. Die verschiedenen Nutzungsflächen anpassen.
+7. Das 3D-Modell mit der Maus drehen und aus unterschiedlichen Perspektiven betrachten.
+8. Die 2D-Grundrissansicht ausprobieren. Diese Funktion ist aktuell noch eingeschränkt.
 
-- **Offline-Artefakt** (Fr, bis 20:00, auf OLAT): 1–3 handgezeichnete Blätter (A4/A3) als PDF.
-  Pflicht ist ein **Regel-/Vokabularblatt** (Bausteine, Kombinationsregeln,
-  Parameter), dazu Konzeptskizzen und/oder ein Ablaufdiagramm. Keine am Rechner
-  erzeugten Inhalte.
-- **Dieses Repository** (Mo): lauffähiger Konfigurator, über **GitHub Pages** im
-  Browser erreichbar.
-- **Reflexion** (Mo, max. 1 DIN-A4-Seite): siehe [`vorlagen/REFLEXION.md`](vorlagen/REFLEXION.md);
-  dort auch das **verwendete KI-Modell** (optional: verbrauchte Tokens).
+Für die Darstellung ist eine Internetverbindung erforderlich, da Three.js über eine externe Bibliothek eingebunden wird.
 
-**Montagsabgabe (Mo, bis 12:00):** der Repo-Link (als Textdatei) und die Reflexion gemeinsam
-als **ZIP-Datei auf OLAT**. (Das Offline-Artefakt wird bereits am Freitag separat auf OLAT abgegeben.)
+## 6. Projektlinks
 
-## Bewertung (5 Kriterien, je 20 %)
+**GitHub Repository:**  
+https://github.com/bsidagun/c2s-guen
 
-Bewertet wird **nicht der (KI-geschriebene) Code**, sondern die architektonische
-Haltung und die Nachvollziehbarkeit des Weges.
+**Live-Version (GitHub Pages):**  
+https://bsidagun.github.io/c2s-guen/
 
-1. **Konzept & Regelsystem** – Tiefe und Originalität des Denkens in der Offline-Phase.
-2. **Carbon-to-Silicon-Kohärenz** – nachvollziehbare Entwicklung vom Blatt zum Tool.
-   Ein *begründeter* Kurswechsel zählt positiv, ein Bruch *ohne* Begründung negativ.
-3. **Werkzeug: Funktion & Bedienbarkeit** – technische Zuverlässigkeit und Bedienbarkeit.
-4. **Entwurfsqualität & eigenes Bewertungskriterium** – gestalterische Qualität der erzeugten
-   Entwürfe und Qualität Ihres selbst definierten, vergleichenden Kriteriums.
-5. **Reflexion** – Qualität der schriftlichen Reflexion.
+**HTML-Datei:**  
+https://github.com/bsidagun/c2s-guen/blob/main/index.html
 
 ---
 
-## So starten Sie
-
-1. **Oben rechts auf „Use this template" → „Create a new repository"** klicken und
-   ein **öffentliches** Repository in Ihrem GitHub-Account anlegen.
-2. Repository **klonen oder im Browser bearbeiten**. Für den Start genügt die
-   `index.html`.
-3. Lokal testen: `index.html` per **Doppelklick** im Browser öffnen.
-4. **GitHub Pages aktivieren:** Repo → *Settings* → *Pages* → *Source:* „Deploy from a
-   branch" → Branch **`main`**, Ordner **`/ (root)`** → *Save*. Nach ca. 1 Minute ist
-   Ihr Tool unter `https://<ihr-name>.github.io/<repo>/` erreichbar.
-5. Entwickeln Sie Ihren Konfigurator in der markierten Zone
-   `=== HIER BEGINNT IHR KONFIGURATOR ===` in `index.html`.
-
-## Arbeiten mit dem KI-Agenten
-
-Übergeben Sie Ihrem Agenten die Datei
-[`TECHNISCHE_ANFORDERUNGEN.md`](TECHNISCHE_ANFORDERUNGEN.md) als Rahmen und Ihr
-Regel-/Vokabularblatt als Konzept. Tipp: Bildfähige Modelle können ein **Foto Ihres
-handgezeichneten Regelblatts** einlesen – ein direkter Carbon→Silicon-Übergang.
-
-Der three.js-Scaffold ist der **empfohlene Standard** (schnellster, sicherer Weg).
-Ambitionierte Teams dürfen **aufwändigere Stacks** nutzen, solange die **Pflicht-Anforderungen**
-in [`TECHNISCHE_ANFORDERUNGEN.md`](TECHNISCHE_ANFORDERUNGEN.md) erfüllt bleiben.
-
-## Ressourcen
-
-- **KI-Agent** empfohlen (z. B. Claude Pro oder ChatGPT Plus), nicht verpflichtend.
-- **Kostenlose Alternative – GWDG Academic Cloud:** <https://chat-ai.academiccloud.de/>
-  (für die Programmierung v. a. *Qwen 3 Coder Next*, *GLM 5.3 Flash*, *DeepSeek V4 Flash*)
-- **three.js-Dokumentation:** <https://threejs.org/docs/>
-- **GitHub Pages – Einstieg:** <https://pages.github.com/>
+**Projektname:** Carbon to Silicon  
+**Studiengang:** Architektur  
+**Hochschule:** Hochschule Mainz
