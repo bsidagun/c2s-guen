@@ -552,14 +552,15 @@ function buildKonfigurator() {
     konfiguratorGruppe.add(decke);
   }
 
-  // ✅ Parametric zoning based on available floor area
-  // Read user inputs for desired areas (with defaults)
-  const wohnenFlaeche = parseFloat(document.getElementById('wohnen')?.value || 0) || grundflaeche * 0.4;
-  const privatFlaeche = parseFloat(document.getElementById('privat')?.value || 0) || grundflaeche * 0.2;
-  const gemeinsamFlaeche = parseFloat(document.getElementById('gemeinsam')?.value || 0) || grundflaeche * 0.1;
-  const nebenFlaeche = parseFloat(document.getElementById('neben')?.value || 0) || grundflaeche * 0.15;
-  const verkehrFlaeche = parseFloat(document.getElementById('verkehr')?.value || 0) || grundflaeche * 0.15;
+  // ✅ Parametric zoning based on floor-specific data
   const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
+  
+  // Use floor-specific data for each floor
+  const wohnenFlaeche = floorPlans[0]?.wohnen || grundflaeche * 0.4;
+  const privatFlaeche = floorPlans[0]?.privat || grundflaeche * 0.2;
+  const gemeinsamFlaeche = floorPlans[0]?.gemeinsam || grundflaeche * 0.1;
+  const nebenFlaeche = floorPlans[0]?.neben || grundflaeche * 0.15;
+  const verkehrFlaeche = floorPlans[0]?.verkehr || grundflaeche * 0.15;
 
   // Check if total desired area exceeds available area
   const verfuegbareFlaeche = grundflaeche * geschosszahl;
@@ -584,6 +585,7 @@ function buildKonfigurator() {
 
   for (let k = 0; k < geschosszahl; k++) {
     const y = k * geschossHoehe + geschossHoehe / 2;
+    const floorData = floorPlans[k] || floorPlans[0];
 
     if (k === 0) {
       // Ground floor: public/commercial zone
@@ -594,11 +596,16 @@ function buildKonfigurator() {
       zone.position.set(0, y - geschossHoehe / 2 + 0.1, tiefe / 2);
       konfiguratorGruppe.add(zone);
     } else {
-      // Upper floors: residential zones based on parametric distribution
-      const wohnenAnteil = wohnenFlaeche / (verfuegbareFlaeche - grundflaeche);
-      const privatAnteil = privatFlaeche / (verfuegbareFlaeche - grundflaeche);
-      const verkehrAnteil = verkehrFlaeche / (verfuegbareFlaeche - grundflaeche);
-      const nebenAnteil = nebenFlaeche / (verfuegbareFlaeche - grundflaeche);
+      // Upper floors: residential zones based on floor-specific data
+      const floorWohnen = floorData.wohnen || 80;
+      const floorPrivat = floorData.privat || 40;
+      const floorVerkehr = floorData.verkehr || 30;
+      const floorNeben = floorData.neben || 30;
+
+      const wohnenAnteil = floorWohnen / (verfuegbareFlaeche - grundflaeche);
+      const privatAnteil = floorPrivat / (verfuegbareFlaeche - grundflaeche);
+      const verkehrAnteil = floorVerkehr / (verfuegbareFlaeche - grundflaeche);
+      const nebenAnteil = floorNeben / (verfuegbareFlaeche - grundflaeche);
 
       // Living zone (front, well-lit)
       const wohnen = new THREE.Mesh(
