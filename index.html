@@ -568,10 +568,10 @@ function buildKonfigurator() {
     verkehr: new THREE.MeshStandardMaterial({ color: 0x7B8FA3, transparent: true, opacity: 0.6 })
   };
 
+  // ✅ Loop over floors with proper `let k`
   for (let k = 0; k < geschosszahl; k++) {
     const y = k * geschossHoehe + geschossHoehe / 2;
     const floorData = floorPlans[k];
-
     if (!floorData) continue;
 
     const wohnenFlaeche = floorData.wohnen;
@@ -588,7 +588,7 @@ function buildKonfigurator() {
 
     // ✅ Sun direction based on nord
     const nord = parseFloat(document.getElementById('nord').value);
-    const sunAngle = (nord + 180) * DEG; // Sun from south
+    const sunAngle = (nord + 180) * DEG;
 
     // ✅ Zone positioning based on sun
     const wohnen = new THREE.Mesh(
