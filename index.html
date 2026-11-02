@@ -290,6 +290,24 @@ scene.add(kontextGruppe, konfiguratorGruppe, sonneGruppe, masseGruppe);
 
 // Parameter (werden von den Bedienelementen gesetzt)
 const P = { breite: 10, tiefe: 20, traufe: 15, strasse: 10, hour: 12, decl: 0, nord: 0, sunPath: true };
+  // ✅ Floor plans data structure
+let floorPlans = [];
+function initFloorPlans() {
+  const geschosszahl = Math.ceil(parseFloat(document.getElementById('traufe').value) / 3.0);
+  floorPlans = [];
+  for (let i = 0; i < geschosszahl; i++) {
+    floorPlans.push({
+      floor: i,
+      wohnen: i === 0 ? 0 : 80,
+      privat: i === 0 ? 0 : 40,
+      gemeinsam: i === 0 ? 80 : 20,
+      neben: i === 0 ? 30 : 30,
+      verkehr: i === 0 ? 30 : 30,
+      zones: []
+    });
+  }
+}
+initFloorPlans();
 
 // Umgebungsmaße des Dummy-Blockrands (Straßenbreite ist über P.strasse regelbar)
 const BLOCK_W = 70;    // Blockbreite (m)
@@ -1025,12 +1043,13 @@ function drawFloorPlan(floorIndex) {
   ctx.lineTo(offsetX + breite * scale, offsetY + tiefe * scale);
   ctx.stroke();
 
-   // Draw zones - using actual input values
-  const wohnenFlaeche = parseFloat(document.getElementById('wohnen').value) || 80;
-  const privatFlaeche = parseFloat(document.getElementById('privat').value) || 40;
-  const gemeinsamFlaeche = parseFloat(document.getElementById('gemeinsam').value) || 20;
-  const nebenFlaeche = parseFloat(document.getElementById('neben').value) || 30;
-  const verkehrFlaeche = parseFloat(document.getElementById('verkehr').value) || 30;
+   // Draw zones - using floor-specific data
+  const floorData = floorPlans[floorIndex] || floorPlans[0];
+  const wohnenFlaeche = floorData.wohnen;
+  const privatFlaeche = floorData.privat;
+  const gemeinsamFlaeche = floorData.gemeinsam;
+  const nebenFlaeche = floorData.neben;
+  const verkehrFlaeche = floorData.verkehr;
 
   const totalFlaeche = wohnenFlaeche + privatFlaeche + gemeinsamFlaeche + nebenFlaeche + verkehrFlaeche;
   const scaleFactor = Math.min(1, (breite * tiefe) / totalFlaeche);
@@ -1099,6 +1118,7 @@ function buildMasse() {
 }
 
 function rebuildGeom() {
+  initFloorPlans();
   buildKontext();
   buildKonfigurator();
   enableShadows(konfiguratorGruppe);
@@ -1144,11 +1164,24 @@ document.getElementById('balkonTiefe').addEventListener('input', () => {
   document.getElementById('vBalkonTiefe').textContent = document.getElementById('balkonTiefe').value;
   rebuildGeom();
 });
-document.getElementById('wohnen').addEventListener('input', rebuildGeom);
-document.getElementById('privat').addEventListener('input', rebuildGeom);
-document.getElementById('gemeinsam').addEventListener('input', rebuildGeom);
-document.getElementById('neben').addEventListener('input', rebuildGeom);
-document.getElementById('verkehr').addEventListener('input', rebuildGeom);
+// ✅ Save input values to current floor
+function saveFloorData() {
+  const floorIndex = parseInt(document.getElementById('floor-select').value);
+  if (floorPlans[floorIndex]) {
+    floorPlans[floorIndex].wohnen = parseFloat(document.getElementById('wohnen').value) || 0;
+    floorPlans[floorIndex].privat = parseFloat(document.getElementById('privat').value) || 0;
+    floorPlans[floorIndex].gemeinsam = parseFloat(document.getElementById('gemeinsam').value) || 0;
+    floorPlans[floorIndex].neben = parseFloat(document.getElementById('neben').value) || 0;
+    floorPlans[floorIndex].verkehr = parseFloat(document.getElementById('verkehr').value) || 0;
+  }
+  rebuildGeom();
+}
+
+document.getElementById('wohnen').addEventListener('input', saveFloorData);
+document.getElementById('privat').addEventListener('input', saveFloorData);
+document.getElementById('gemeinsam').addEventListener('input', saveFloorData);
+document.getElementById('neben').addEventListener('input', saveFloorData);
+document.getElementById('verkehr').addEventListener('input', saveFloorData);
 document.getElementById('verkehrAnteil').addEventListener('input', () => {
   document.getElementById('vVerkehrAnteil').textContent = document.getElementById('verkehrAnteil').value;
   rebuildGeom();
@@ -1166,9 +1199,19 @@ document.getElementById('view-2d').addEventListener('click', () => {
   drawFloorPlan(parseInt(document.getElementById('floor-select').value));
 });
 
-// ✅ Floor selector
+// ✅ Floor selector - updates input fields for selected floor
 document.getElementById('floor-select').addEventListener('change', (e) => {
-  drawFloorPlan(parseInt(e.target.value));
+  const floorIndex = parseInt(e.target.value);
+  const floorData = floorPlans[floorIndex] || floorPlans[0];
+  
+  // Update input fields with floor-specific values
+  document.getElementById('wohnen').value = floorData.wohnen;
+  document.getElementById('privat').value = floorData.privat;
+  document.getElementById('gemeinsam').value = floorData.gemeinsam;
+  document.getElementById('neben').value = floorData.neben;
+  document.getElementById('verkehr').value = floorData.verkehr;
+  
+  drawFloorPlan(floorIndex);
 });
 // ------------------------------------------------------------------
 //  Export (Ihr Ergebnis = konfiguratorGruppe)
