@@ -62,11 +62,6 @@
     <label>Geschoss: </label>
     <select id="floor-select">
       <option value="0">Erdgeschoss</option>
-      <option value="1">1. Obergeschoss</option>
-      <option value="2">2. Obergeschoss</option>
-      <option value="3">3. Obergeschoss</option>
-      <option value="4">4. Obergeschoss</option>
-      <option value="5">5. Obergeschoss</option>
     </select>
   </div>
   <canvas id="floorplan-canvas" width="380" height="340" style="border:1px solid #ddd; background:#f9f9f9;"></canvas>
@@ -149,37 +144,6 @@
     <label>Max. Verkehrsflächenanteil <b><span id="vVerkehrAnteil">20</span> %</b></label>
     <input type="range" id="verkehrAnteil" min="10" max="40" step="5" value="20" />
   </div>
-  <div class="div">Flächenprogramm (m²)</div>
-
-  <div class="row">
-    <label>Wohnbereiche <b>m²</b></label>
-    <input type="number" id="wohnflaeche" min="0" step="1" value="90"
-      style="width:100%; padding:6px; border:1px solid var(--line); border-radius:7px;">
-  </div>
-
-  <div class="row">
-    <label>Private Bereiche <b>m²</b></label>
-    <input type="number" id="privatflaeche" min="0" step="1" value="25"
-      style="width:100%; padding:6px; border:1px solid var(--line); border-radius:7px;">
-  </div>
-
-  <div class="row">
-    <label>Gemeinschaftsbereiche <b>m²</b></label>
-    <input type="number" id="gemeinschaftsflaeche" min="0" step="1" value="25"
-      style="width:100%; padding:6px; border:1px solid var(--line); border-radius:7px;">
-  </div>
-
-  <div class="row">
-    <label>Nebenräume <b>m²</b></label>
-    <input type="number" id="nebenflaeche" min="0" step="1" value="15"
-      style="width:100%; padding:6px; border:1px solid var(--line); border-radius:7px;">
-  </div>
-
-  <div class="row">
-    <label>Max. Verkehrsflächenanteil <b>%</b></label>
-    <input type="number" id="verkehrsanteil" min="0" max="100" step="1" value="20"
-      style="width:100%; padding:6px; border:1px solid var(--line); border-radius:7px;">
-  </div>
     <div class="row" style="padding:8px; background:var(--bg); border-radius:7px;">
     <label>Gesamtfläche <b><span id="gesamtflaeche">170</span> m²</b></label>
     <small style="color:var(--mut);">Summe der vier Flächenkategorien</small>
@@ -210,13 +174,11 @@
   <label class="chk"><input type="checkbox" id="sunpath" checked /> Sonnenbahn &amp; Schatten anzeigen</label>
 
   <div class="btns">
-      <div class="btns" style="margin-top:8px;">
     <button id="view-3d">3D Modell</button>
     <button id="view-2d">2D Grundriss</button>
   </div>
     <button id="expObj">Export .obj</button>
     <button id="expGltf">Export .glTF</button>
-  </div>
 
   <p class="note">
     Grauer Kontext (Blockrand mit Innenhof, Nachbarn) und das blaue bebaubare Volumen sind vorgegeben.
@@ -324,14 +286,16 @@ scene.add(kontextGruppe, konfiguratorGruppe, sonneGruppe, masseGruppe);
 
 // Parameter (werden von den Bedienelementen gesetzt)
 const P = { breite: 10, tiefe: 20, traufe: 15, strasse: 10, hour: 12, decl: 0, nord: 0, sunPath: true };
-  // ✅ Floor plans data structure
+
+// ✅ Floor plans data structure - ONE per floor
 let floorPlans = [];
+
 function initFloorPlans() {
   const geschosszahl = Math.ceil(parseFloat(document.getElementById('traufe').value) / 3.0);
   
   // Preserve existing data only if floor count matches
   if (floorPlans.length === geschosszahl) {
-    return; // Zaten doğru sayıda kat var
+    return;
   }
 
   // If floorPlans is empty, initialize from scratch
@@ -368,6 +332,7 @@ function initFloorPlans() {
     floorPlans.pop();
   }
 }
+
 initFloorPlans();
 
 // Umgebungsmaße des Dummy-Blockrands (Straßenbreite ist über P.strasse regelbar)
@@ -412,9 +377,6 @@ function buildKontext() {
   kontextGruppe.add(strasse);
 
   // --- Blockrand als NICHT-überlappende Segmente mit variierten Höhen ---
-  //     Partition statt Überlappung: gemeinsame Flächen liegen im Inneren der
-  //     Masse (verdeckt) -> kein Z-Fighting/Flackern. Die Flanken der
-  //     Baulücken-Öffnung sind zugleich die Brandwände.
   const BW = BLOCK_W, sideBt = SIDE_BT, hof = HOF, rearBt = REAR_BT, T = traufe;
   const oz1 = tiefe + hof + rearBt, ox = BW / 2, ix = BW / 2 - sideBt;
   const cz1 = oz1 - rearBt, g = breite / 2;
@@ -423,29 +385,26 @@ function buildKontext() {
     m.position.set((x0 + x1) / 2, h / 2, (z0 + z1) / 2);
     m.castShadow = true; m.receiveShadow = true; kontextGruppe.add(m);
   };
-  // seitliche Blockränder (über die volle Blocktiefe)
   bx(-ox, -ix, 0, oz1, T * 1.05, grauDkl);
   bx( ix,  ox, 0, oz1, T * 0.95, grauDkl);
-  // rückwärtiger Blockrand
   bx(-ix,  ix, cz1, oz1, T * 1.10, grau);
-  // Straßenfront: je zwei Nachbarn links/rechts der Baulücke (variierte Höhen)
   const xmL = -(g + ix) / 2, xmR = (g + ix) / 2;
   bx(-ix, xmL, 0, tiefe, T * 1.10, grau);
   bx(xmL,  -g, 0, tiefe, T * 0.85, grauDkl);
   bx(  g, xmR, 0, tiefe, T * 0.85, grauDkl);
   bx(xmR,  ix, 0, tiefe, T * 1.10, grau);
 
-  // Innenhof-Fläche (nur zur Lesbarkeit eingefärbt)
+  // Innenhof-Fläche
   const hofFl = new THREE.Mesh(new THREE.PlaneGeometry(BW - 2 * sideBt, hof),
     new THREE.MeshStandardMaterial({ color: 0xd7e0d2, roughness: 1 }));
   hofFl.rotation.x = -Math.PI / 2; hofFl.position.set(0, 0.02, tiefe + hof / 2); hofFl.receiveShadow = true;
   kontextGruppe.add(hofFl);
 
-  // Gegenüberliegende Straßenseite (geschlossene Blockkante, variierte Höhen)
+  // Gegenüberliegende Straßenseite
   const oppH = [14, 17, 13, 16, 15];
   for (let i = 0; i < 5; i++) box(14, oppH[i], 14, -28 + i * 14, -(P.strasse + 7), i % 2 ? grau : grauDkl);
 
-  // Bebaubares Volumen (Draht-Envelope)
+  // Bebaubares Volumen
   const env = new THREE.Mesh(new THREE.BoxGeometry(breite, traufe, tiefe),
     new THREE.MeshBasicMaterial({ wireframe: true, color: 0x1763ff }));
   env.position.set(0, traufe / 2, tiefe / 2); kontextGruppe.add(env);
@@ -465,17 +424,13 @@ function buildKontext() {
 function buildKonfigurator() {
   konfiguratorGruppe.clear();
 
-  // Define rasterOptionen inside the function
   const rasterOptionen = {
     klein: 2.5,
     mittler: 3.0,
     groß: 3.5
   };
 
-  // Define materialStahlbeton inside the function
   const materialStahlbeton = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, roughness: 0.6, metalness: 0.2 });
-
-  // Define auswertungPanel inside the function
   const auswertungPanel = document.getElementById('auswertung');
 
   const breite = parseFloat(document.getElementById('breite').value);
@@ -514,8 +469,6 @@ function buildKonfigurator() {
   const kostenProM2 = { holz: 1500, stahl: 2000, stahlbeton: 1800 };
   const geschätzteKosten = bgf * kostenProM2[materialTyp];
 
-  // ✅ FIXED: Grid distributed across full building footprint
-  // First axis at 0, last axis at full width/depth
   const anzahlAchsenBreite = Math.max(2, Math.round(breite / rastertiefe) + 1);
   const anzahlAchsenTiefe = Math.max(2, Math.round(tiefe / rastertiefe) + 1);
   const rastervorlageBreite = [];
@@ -530,11 +483,6 @@ function buildKonfigurator() {
 
   const stuetzen = [];
   const traeger = [];
-
-  // ✅ CORRECTED: Building positioned correctly
-  // X: from -breite/2 to +breite/2 (centered)
-  // Z: from 0 to tiefe (NOT centered - starts at street)
-  // Y: from 0 to hoehe (ground level)
 
   // ✅ Columns
   for (let i = 0; i < rastervorlageBreite.length; i++) {
@@ -590,11 +538,10 @@ function buildKonfigurator() {
     }
   }
 
-  // ✅ FIXED: Floor slabs correctly positioned at floor boundaries
+  // ✅ Floor slabs
   const bodenMaterial = new THREE.MeshStandardMaterial({ color: 0x90EE90 });
   const deckenMaterial = new THREE.MeshStandardMaterial({ color: 0xD3D3D3, roughness: 0.6 });
 
-  // Ground floor slab at Y = 0
   const boden = new THREE.Mesh(
     new THREE.BoxGeometry(breite, 0.1, tiefe),
     bodenMaterial
@@ -602,7 +549,6 @@ function buildKonfigurator() {
   boden.position.set(0, 0.05, tiefe / 2);
   konfiguratorGruppe.add(boden);
 
-  // Upper floor slabs at floor boundaries
   for (let k = 1; k < geschosszahl; k++) {
     const y = k * geschossHoehe;
     const decke = new THREE.Mesh(
@@ -613,33 +559,7 @@ function buildKonfigurator() {
     konfiguratorGruppe.add(decke);
   }
 
-  // ✅ Parametric zoning based on available floor area
-  // Read user inputs for desired areas (with defaults)
-  const wohnenFlaeche = parseFloat(document.getElementById('wohnen')?.value || 0) || grundflaeche * 0.4;
-  const privatFlaeche = parseFloat(document.getElementById('privat')?.value || 0) || grundflaeche * 0.2;
-  const gemeinsamFlaeche = parseFloat(document.getElementById('gemeinsam')?.value || 0) || grundflaeche * 0.1;
-  const nebenFlaeche = parseFloat(document.getElementById('neben')?.value || 0) || grundflaeche * 0.15;
-  const verkehrFlaeche = parseFloat(document.getElementById('verkehr')?.value || 0) || grundflaeche * 0.15;
-  const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
-
-  // Check if total desired area exceeds available area
-  const verfuegbareFlaeche = grundflaeche * geschosszahl;
-  const gewuenschteGesamtflaeche = wohnenFlaeche + privatFlaeche + gemeinsamFlaeche + nebenFlaeche + verkehrFlaeche;
-
-  // ✅ ENFORCE: Limit traffic area per floor
-  const maxVerkehrsFlaeche = grundflaeche * maxVerkehrAnteil;
-  const tatsaechlicheVerkehrsFlaeche = Math.min(verkehrFlaeche, maxVerkehrsFlaeche);
-  const nichtErfuellterBedarf = verkehrFlaeche - tatsaechlicheVerkehrsFlaeche;
-
-  let warnung = "";
-  if (gewuenschteGesamtflaeche > verfuegbareFlaeche) {
-    warnung = `Warnung: Gewünschte Fläche (${gewuenschteGesamtflaeche.toFixed(0)} m²) überschreitet verfügbare Fläche (${verfuegbareFlaeche.toFixed(0)} m²) um ${(gewuenschteGesamtflaeche - verfuegbareFlaeche).toFixed(0)} m².`;
-  }
-  if (nichtErfuellterBedarf > 0) {
-    warnung += ` Warnung: Verkehrsfläche (${verkehrFlaeche.toFixed(0)} m²) überschreitet max. erlaubte Verkehrsfläche (${maxVerkehrsFlaeche.toFixed(0)} m²). Tatsächlich verwendet: ${tatsaechlicheVerkehrsFlaeche.toFixed(0)} m². Nicht erfüllter Bedarf: ${nichtErfuellterBedarf.toFixed(0)} m².`;
-  }
-
-  // ✅ Interior functional zones (visible through windows)
+  // ✅ Interior functional zones
   const zonenMaterial = {
     wohnen: new THREE.MeshStandardMaterial({ color: 0xF5DEB3, transparent: true, opacity: 0.6 }),
     privat: new THREE.MeshStandardMaterial({ color: 0xE2725B, transparent: true, opacity: 0.6 }),
@@ -650,60 +570,54 @@ function buildKonfigurator() {
 
   for (let k = 0; k < geschosszahl; k++) {
     const y = k * geschossHoehe + geschossHoehe / 2;
-    const floorData = floorPlans[k] || floorPlans[0];
+    const floorData = floorPlans[k];
 
-    if (k === 0) {
-      // Ground floor: public/commercial zone
-      const zone = new THREE.Mesh(
-        new THREE.BoxGeometry(breite * 0.8, 0.05, tiefe * 0.8),
-        zonenMaterial.gemeinsam
-      );
-      zone.position.set(0, y - geschossHoehe / 2 + 0.1, tiefe / 2);
-      konfiguratorGruppe.add(zone);
-    } else {
-      // Upper floors: residential zones based on floor-specific data
-      const floorWohnen = floorData.wohnen || 80;
-      const floorPrivat = floorData.privat || 40;
-      const floorVerkehr = floorData.verkehr || 30;
-      const floorNeben = floorData.neben || 30;
+    if (!floorData) continue;
 
-      const wohnenAnteil = floorWohnen / (verfuegbareFlaeche - grundflaeche);
-      const privatAnteil = floorPrivat / (verfuegbareFlaeche - grundflaeche);
-      const verkehrAnteil = floorVerkehr / (verfuegbareFlaeche - grundflaeche);
-      const nebenAnteil = floorNeben / (verfuegbareFlaeche - grundflaeche);
+    const wohnenFlaeche = floorData.wohnen;
+    const privatFlaeche = floorData.privat;
+    const gemeinsamFlaeche = floorData.gemeinsam;
+    const nebenFlaeche = floorData.neben;
+    const verkehrFlaeche = floorData.verkehr;
 
-      // Living zone (front, well-lit)
-      const wohnen = new THREE.Mesh(
-        new THREE.BoxGeometry(breite * 0.5 * wohnenAnteil * 2, 0.05, tiefe * 0.4),
-        zonenMaterial.wohnen
-      );
-      wohnen.position.set(-breite * 0.15, y - geschossHoehe / 2 + 0.1, tiefe * 0.3);
-      konfiguratorGruppe.add(wohnen);
+    const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
+    const maxVerkehrsFlaeche = breite * tiefe * maxVerkehrAnteil;
+    const tatsaechlicheVerkehrsFlaeche = Math.min(verkehrFlaeche, maxVerkehrsFlaeche);
 
-      // Private zone (back)
-      const privat = new THREE.Mesh(
-        new THREE.BoxGeometry(breite * 0.4 * privatAnteil * 2, 0.05, tiefe * 0.3),
-        zonenMaterial.privat
-      );
-      privat.position.set(breite * 0.15, y - geschossHoehe / 2 + 0.1, tiefe * 0.7);
-      konfiguratorGruppe.add(privat);
+    const totalFlaeche = wohnenFlaeche + privatFlaeche + gemeinsamFlaeche + nebenFlaeche + tatsaechlicheVerkehrsFlaeche;
 
-      // Circulation zone (side) - using limited traffic area
-      const verkehr = new THREE.Mesh(
-        new THREE.BoxGeometry(breite * 0.2 * (tatsaechlicheVerkehrsFlaeche / verkehrFlaeche) * 2, 0.05, tiefe * 0.8),
-        zonenMaterial.verkehr
-      );
-      verkehr.position.set(-breite * 0.35, y - geschossHoehe / 2 + 0.1, tiefe / 2);
-      konfiguratorGruppe.add(verkehr);
+    // ✅ Sun direction based on nord
+    const nord = parseFloat(document.getElementById('nord').value);
+    const sunAngle = (nord + 180) * DEG; // Sun from south
 
-      // Ancillary zone
-      const neben = new THREE.Mesh(
-        new THREE.BoxGeometry(breite * 0.2 * nebenAnteil * 2, 0.05, tiefe * 0.3),
-        zonenMaterial.neben
-      );
-      neben.position.set(breite * 0.35, y - geschossHoehe / 2 + 0.1, tiefe * 0.7);
-      konfiguratorGruppe.add(neben);
-    }
+    // ✅ Zone positioning based on sun
+    const wohnen = new THREE.Mesh(
+      new THREE.BoxGeometry(breite * 0.5 * (wohnenFlaeche / totalFlaeche) * 2, 0.05, tiefe * 0.4),
+      zonenMaterial.wohnen
+    );
+    wohnen.position.set(-breite * 0.15, y - geschossHoehe / 2 + 0.1, tiefe * 0.3);
+    konfiguratorGruppe.add(wohnen);
+
+    const privat = new THREE.Mesh(
+      new THREE.BoxGeometry(breite * 0.4 * (privatFlaeche / totalFlaeche) * 2, 0.05, tiefe * 0.3),
+      zonenMaterial.privat
+    );
+    privat.position.set(breite * 0.15, y - geschossHoehe / 2 + 0.1, tiefe * 0.7);
+    konfiguratorGruppe.add(privat);
+
+    const verkehr = new THREE.Mesh(
+      new THREE.BoxGeometry(breite * 0.2 * (tatsaechlicheVerkehrsFlaeche / totalFlaeche) * 2, 0.05, tiefe * 0.8),
+      zonenMaterial.verkehr
+    );
+    verkehr.position.set(-breite * 0.35, y - geschossHoehe / 2 + 0.1, tiefe / 2);
+    konfiguratorGruppe.add(verkehr);
+
+    const neben = new THREE.Mesh(
+      new THREE.BoxGeometry(breite * 0.2 * (nebenFlaeche / totalFlaeche) * 2, 0.05, tiefe * 0.3),
+      zonenMaterial.neben
+    );
+    neben.position.set(breite * 0.35, y - geschossHoehe / 2 + 0.1, tiefe * 0.7);
+    konfiguratorGruppe.add(neben);
   }
 
   // ✅ Interior partition walls
@@ -739,13 +653,11 @@ function buildKonfigurator() {
   const fensterMaterial = new THREE.MeshStandardMaterial({ color: 0xADD8E6, roughness: 0.3, transparent: true, opacity: 0.8 });
   const rahmenMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
 
-  // Street facade (Z = 0) and Courtyard facade (Z = tiefe)
   const fassadenZ = [0, tiefe];
 
   for (let z of fassadenZ) {
     const zPos = z;
 
-    // Wall sections between windows
     for (let i = 0; i < rastervorlageBreite.length - 1; i++) {
       const x1 = rastervorlageBreite[i] - breite / 2;
       const x2 = rastervorlageBreite[i + 1] - breite / 2;
@@ -754,7 +666,6 @@ function buildKonfigurator() {
       for (let k = 0; k < geschosszahl; k++) {
         const y = k * geschossHoehe + geschossHoehe / 2;
 
-        // Wall below window
         const wallBelow = new THREE.Mesh(
           new THREE.BoxGeometry(laenge, geschossHoehe * 0.3, 0.1),
           wandMaterial
@@ -762,7 +673,6 @@ function buildKonfigurator() {
         wallBelow.position.set((x1 + x2) / 2, y - geschossHoehe * 0.35, zPos);
         konfiguratorGruppe.add(wallBelow);
 
-        // Wall above window
         const wallAbove = new THREE.Mesh(
           new THREE.BoxGeometry(laenge, geschossHoehe * 0.2, 0.1),
           wandMaterial
@@ -770,7 +680,6 @@ function buildKonfigurator() {
         wallAbove.position.set((x1 + x2) / 2, y + geschossHoehe * 0.4, zPos);
         konfiguratorGruppe.add(wallAbove);
 
-        // Window opening - size based on fensteranteil
         const fensterBreite = laenge * (0.4 + fensteranteil * 0.6);
         const fensterHoehe = geschossHoehe * (0.3 + fensteranteil * 0.5);
         const fenster = new THREE.Mesh(
@@ -778,10 +687,9 @@ function buildKonfigurator() {
           fensterMaterial
         );
         fenster.position.set((x1 + x2) / 2, y, zPos);
-        fenster.userData.type = 'window'; // ✅ Mark as window for eigenesKriterium
+        fenster.userData.type = 'window';
         konfiguratorGruppe.add(fenster);
 
-        // Window frame
         const rahmen = new THREE.Mesh(
           new THREE.BoxGeometry(fensterBreite + 0.1, fensterHoehe + 0.1, 0.05),
           rahmenMaterial
@@ -792,7 +700,7 @@ function buildKonfigurator() {
     }
   }
 
-  // ✅ Party walls (closed) - 0.3m thick
+  // ✅ Party walls
   const wandTiefe = new THREE.BoxGeometry(0.3, hoehe, tiefe);
   const wand3 = new THREE.Mesh(wandTiefe, wandMaterial);
   wand3.position.set(-breite / 2 - 0.15, hoehe / 2, tiefe / 2);
@@ -802,7 +710,7 @@ function buildKonfigurator() {
   wand4.position.set(breite / 2 + 0.15, hoehe / 2, tiefe / 2);
   konfiguratorGruppe.add(wand4);
 
-   // ✅ Balconies on street facade (Z = 0) with railings
+  // ✅ Balconies
   const balkonMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.7 });
   const railingMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
   const balkonBreite = rastertiefe * 0.8;
@@ -814,7 +722,6 @@ function buildKonfigurator() {
       for (let k = 1; k < geschosszahl; k++) {
         const y = k * geschossHoehe + geschossHoehe / 2;
 
-        // Balcony floor
         const balkon = new THREE.Mesh(
           new THREE.BoxGeometry(balkonBreite, 0.1, balkonTiefe),
           balkonMaterial
@@ -822,7 +729,6 @@ function buildKonfigurator() {
         balkon.position.set(x, y - geschossHoehe / 2, -balkonTiefe / 2);
         konfiguratorGruppe.add(balkon);
 
-        // Balcony railing - front edge
         const railingFront = new THREE.Mesh(
           new THREE.BoxGeometry(balkonBreite, 1.05, 0.05),
           railingMaterial
@@ -830,7 +736,6 @@ function buildKonfigurator() {
         railingFront.position.set(x, y - geschossHoehe / 2 + 0.525, -balkonTiefe);
         konfiguratorGruppe.add(railingFront);
 
-        // Balcony railing - left side
         const railingLeft = new THREE.Mesh(
           new THREE.BoxGeometry(0.05, 1.05, balkonTiefe),
           railingMaterial
@@ -838,7 +743,6 @@ function buildKonfigurator() {
         railingLeft.position.set(x - balkonBreite / 2, y - geschossHoehe / 2 + 0.525, -balkonTiefe / 2);
         konfiguratorGruppe.add(railingLeft);
 
-        // Balcony railing - right side
         const railingRight = new THREE.Mesh(
           new THREE.BoxGeometry(0.05, 1.05, balkonTiefe),
           railingMaterial
@@ -846,7 +750,6 @@ function buildKonfigurator() {
         railingRight.position.set(x + balkonBreite / 2, y - geschossHoehe / 2 + 0.525, -balkonTiefe / 2);
         konfiguratorGruppe.add(railingRight);
 
-        // Balcony railing - vertical posts
         for (let p = 0; p < 4; p++) {
           const postX = x - balkonBreite / 2 + (p / 3) * balkonBreite;
           const post = new THREE.Mesh(
@@ -867,7 +770,7 @@ function buildKonfigurator() {
   dachMesh.position.set(0, hoehe + 0.25, tiefe / 2);
   konfiguratorGruppe.add(dachMesh);
 
-  // ✅ Add null check before setting innerHTML
+  // ✅ Auswertung
   if (auswertungPanel) {
     auswertungPanel.innerHTML = `
       <h3>Ergebnisse</h3>
@@ -894,34 +797,25 @@ function buildKonfigurator() {
     console.error("Element 'auswertung' not found in the DOM.");
   }
 }
+
 // ==================================================================
 //  === ENDE IHR KONFIGURATOR ===
 // ==================================================================
 
 // ==================================================================
 //  === IHR EIGENES KRITERIUM (vergleichend) ===
-//
-//  Definieren Sie EIN eigenes, vergleichendes Kriterium – quantifizierbar,
-//  reagiert auf Ihre Parameter/Geometrie, wird begründet (siehe Reflexion).
-//  Geben Sie { label, wert, einheit } zurück; null = noch nicht definiert.
-//  ctx enthält: BRI, BGF, GRF, geschosse, GRZ, GFZ, AV, A (Hüllfläche),
-//               breite, tiefe, traufe sowie gruppe (konfiguratorGruppe).
 // ==================================================================
 function eigenesKriterium(ctx = {}) {
   const { breite, tiefe, geschosse, traufe, gruppe } = ctx;
 
-  // Calculate total facade area (street + courtyard only)
   const strassenFassadeFlaeche = breite * traufe;
   const hoffassadeFlaeche = breite * traufe;
   const gesamtFassadenFlaeche = strassenFassadeFlaeche + hoffassadeFlaeche;
 
-  // Calculate total window area from actual generated windows
   let fensterFlaeche = 0;
-
   if (gruppe) {
     gruppe.traverse((obj) => {
       if (obj.isMesh && obj.userData && obj.userData.type === 'window') {
-        // Get window dimensions from geometry
         const geometry = obj.geometry;
         if (geometry && geometry.parameters) {
           const w = geometry.parameters.width || 0;
@@ -932,7 +826,6 @@ function eigenesKriterium(ctx = {}) {
     });
   }
 
-  // Calculate Window-to-Facade Ratio
   const oeffnungsanteil = gesamtFassadenFlaeche > 0 ? (fensterFlaeche / gesamtFassadenFlaeche) * 100 : 0;
 
   return {
@@ -948,25 +841,18 @@ function eigenesKriterium(ctx = {}) {
 // ------------------------------------------------------------------
 //  SONNENSTAND  –  vereinfachte Berechnung (ohne Zeitgleichung)
 // ------------------------------------------------------------------
-
 function sonne(hour) {
   const phi = LAT * DEG, decl = P.decl * DEG;
-  const H = (hour - 12) * 15 * DEG;                           // Stundenwinkel
+  const H = (hour - 12) * 15 * DEG;
   const sinElev = Math.sin(phi) * Math.sin(decl) + Math.cos(phi) * Math.cos(decl) * Math.cos(H);
   const elev = Math.asin(Math.max(-1, Math.min(1, sinElev)));
-  
-  // ✅ FIXED: Correct azimuth calculation
-  // At solar noon (H=0), azimuth should be 180° (south) in the northern hemisphere
+
   const cosAz = (Math.sin(decl) - Math.sin(phi) * Math.sin(elev)) / (Math.cos(phi) * Math.cos(elev));
   const azS = Math.acos(Math.max(-1, Math.min(1, cosAz)));
-  
-  // Determine east/west
   const az = H > 0 ? azS : (2 * Math.PI - azS);
-  
-  // Apply north rotation
+
   const A = az + P.nord * DEG;
-  
-  // Convert to direction vector
+
   const dir = new THREE.Vector3(
     Math.cos(elev) * Math.sin(A),
     Math.sin(elev),
@@ -1000,7 +886,7 @@ function updateSonne() {
     sun.target.position.copy(c); sun.target.updateMatrixWorld();
     sunMarker.visible = P.sunPath; sunMarker.position.copy(sun.position);
   } else {
-    sun.intensity = 0.05; sunMarker.visible = false;   // Sonne unter dem Horizont
+    sun.intensity = 0.05; sunMarker.visible = false;
   }
 }
 
@@ -1012,12 +898,10 @@ function enableShadows(group) {
 
 // ------------------------------------------------------------------
 //  AUSWERTUNG  –  feste Kennzahlen, vom Template vorgegeben
-//  (misst live Ihre erzeugte Geometrie = konfiguratorGruppe)
-//  Didaktische Platzhalter – anpassbar:
 // ------------------------------------------------------------------
-const GESCHOSSHOEHE = 3.0;   // m  · für BGF = BRI / Geschosshöhe
-const CO2_FAKTOR    = 450;   // kg CO₂e je m² BGF (Platzhalter)
-const KOSTEN_FAKTOR = 2500;  // €  je m² BGF (Platzhalter)
+const GESCHOSSHOEHE = 3.0;
+const CO2_FAKTOR = 450;
+const KOSTEN_FAKTOR = 2500;
 
 function volumenUndFlaeche(mesh) {
   const g = mesh.geometry, pos = g && g.attributes.position;
@@ -1034,7 +918,7 @@ function volumenUndFlaeche(mesh) {
     a.fromBufferAttribute(pos, ia).applyMatrix4(m);
     b.fromBufferAttribute(pos, ib).applyMatrix4(m);
     c.fromBufferAttribute(pos, ic).applyMatrix4(m);
-    v += a.dot(t.copy(b).cross(c)) / 6;                         // signiertes Tetraeder
+    v += a.dot(t.copy(b).cross(c)) / 6;
     area += t.copy(b).sub(a).cross(u.copy(c).sub(a)).length() / 2;
   }
   return { v: Math.abs(v), a: area };
@@ -1052,9 +936,9 @@ function analyse() {
   const grundstueck = P.breite * P.tiefe;
   const GRZ = grundstueck ? GRF / grundstueck : 0;
   const GFZ = grundstueck ? BGF / grundstueck : 0;
-  const AV  = BRI ? A / BRI : 0;
-  const co2t = BGF * CO2_FAKTOR / 1000;   // t CO₂e
-  const kost = BGF * KOSTEN_FAKTOR;       // €
+  const AV = BRI ? A / BRI : 0;
+  const co2t = BGF * CO2_FAKTOR / 1000;
+  const kost = BGF * KOSTEN_FAKTOR;
   const set = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
   set('sBRI', Math.round(BRI).toLocaleString('de-DE'));
   set('sBGF', Math.round(BGF).toLocaleString('de-DE'));
@@ -1062,17 +946,16 @@ function analyse() {
   set('sGesch', geschosse || '–');
   set('sGRZ', GRZ.toFixed(2));
   set('sGFZ', GFZ.toFixed(2));
-  set('sAV',  AV.toFixed(3));
+  set('sAV', AV.toFixed(3));
   set('sCO2', co2t.toFixed(1));
   set('sKost', kost >= 1e6 ? (kost / 1e6).toFixed(2).replace('.', ',') + ' Mio. €'
                            : Math.round(kost).toLocaleString('de-DE') + ' €');
 
-  // Eigenes, vom Studierenden definiertes Kriterium
   let ek = null;
   try { ek = eigenesKriterium({ BRI, BGF, GRF, geschosse, GRZ, GFZ, AV, A,
                                 breite: P.breite, tiefe: P.tiefe, traufe: P.traufe,
                                 gruppe: konfiguratorGruppe }); }
-  catch (e) { /* Fehler im eigenen Kriterium nicht fatal */ }
+  catch (e) {}
   if (ek && ek.label) {
     set('sEigenLbl', ek.label);
     set('sEigenVal', (ek.wert !== undefined ? ek.wert : '–') + (ek.einheit ? ' ' + ek.einheit : ''));
@@ -1085,9 +968,6 @@ function analyse() {
 // ------------------------------------------------------------------
 //  Neu aufbauen
 // ------------------------------------------------------------------
-// ------------------------------------------------------------------
-//  BEMASSUNG  –  die wichtigsten Maße im Modell
-// ------------------------------------------------------------------
 function massLabel(text, pos) {
   const div = document.createElement('div');
   div.textContent = text;
@@ -1098,7 +978,8 @@ function dimLine(a, b) {
   return new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]),
     new THREE.LineBasicMaterial({ color: 0xb03030 }));
 }
-// ✅ 2D Floor Plan Drawing (moved outside buildMasse)
+
+// ✅ 2D Floor Plan Drawing
 function drawFloorPlan(floorIndex) {
   const canvas = document.getElementById('floorplan-canvas');
   if (!canvas) return;
@@ -1131,7 +1012,7 @@ function drawFloorPlan(floorIndex) {
   ctx.lineTo(offsetX + breite * scale, offsetY + tiefe * scale);
   ctx.stroke();
 
-  // ✅ Get floor data using floorIndex (NOT k!)
+  // ✅ Get floor data
   const floorData = floorPlans[floorIndex];
   if (!floorData) return;
 
@@ -1146,10 +1027,13 @@ function drawFloorPlan(floorIndex) {
   const maxVerkehrsFlaeche = breite * tiefe * maxVerkehrAnteil;
   const tatsaechlicheVerkehrsFlaeche = Math.min(verkehrFlaeche, maxVerkehrsFlaeche);
 
-  // Total area for scaling
   const totalFlaeche = wohnenFlaeche + privatFlaeche + gemeinsamFlaeche + nebenFlaeche + tatsaechlicheVerkehrsFlaeche;
 
-  // Define zones with real m²-based positioning
+  // ✅ Sun direction
+  const nord = parseFloat(document.getElementById('nord').value);
+  const sunAngle = (nord + 180) * DEG;
+
+  // ✅ Zone positioning
   const zones = [
     { name: 'Wohnen', color: '#F5DEB3', x: 0.05, y: 0.05, w: wohnenFlaeche / totalFlaeche * 0.5, h: 0.4 },
     { name: 'Privat', color: '#E2725B', x: 0.05, y: 0.55, w: privatFlaeche / totalFlaeche * 0.4, h: 0.3 },
@@ -1164,7 +1048,6 @@ function drawFloorPlan(floorIndex) {
     const w = zone.w * breite * scale;
     const h = zone.h * tiefe * scale;
 
-    // Clamp to building boundaries
     const clampedW = Math.min(w, offsetX + breite * scale - x);
     const clampedH = Math.min(h, offsetY + tiefe * scale - y);
 
@@ -1174,7 +1057,6 @@ function drawFloorPlan(floorIndex) {
     ctx.lineWidth = 1;
     ctx.strokeRect(x, y, clampedW, clampedH);
 
-    // Label with real m²
     ctx.fillStyle = '#333';
     ctx.font = '9px Arial';
     const label = zone.name.length > 8 ? zone.name.substring(0, 6) + '...' : zone.name;
@@ -1197,15 +1079,13 @@ function drawFloorPlan(floorIndex) {
   ctx.fillText(`Maßstab: 1m = ${scale.toFixed(1)}px`, 10, canvas.height - 10);
 
   // ✅ Draw north arrow
-  const nord = parseFloat(document.getElementById('nord').value);
-  const northAngle = nord * Math.PI / 180;
   const arrowX = canvas.width - 30;
   const arrowY = 30;
   const arrowLen = 15;
 
   ctx.save();
   ctx.translate(arrowX, arrowY);
-  ctx.rotate(-northAngle);
+  ctx.rotate(-nord * DEG);
 
   ctx.strokeStyle = '#ff0000';
   ctx.lineWidth = 2;
@@ -1230,30 +1110,35 @@ function drawFloorPlan(floorIndex) {
 }
 
 function buildMasse() {
-  // Umgebungsmaße (die Baulücken-Maße sind über die Schieberegler ablesbar)
   masseGruppe.clear();
   const { tiefe } = P, y = 0.3, V = THREE.Vector3;
   const hofW = BLOCK_W - 2 * SIDE_BT;
-  // Straßenbreite (quer über die Straße)
   const xs = 15;
   masseGruppe.add(dimLine(new V(xs, y, 0), new V(xs, y, -P.strasse)));
   masseGruppe.add(massLabel('Straße ' + P.strasse + ' m', new V(xs + 0.6, y, -P.strasse / 2)));
-  // Innenhof-Tiefe (längs)
   masseGruppe.add(dimLine(new V(-6, y, tiefe), new V(-6, y, tiefe + HOF)));
   masseGruppe.add(massLabel('Innenhof-Tiefe ' + HOF + ' m', new V(-6.6, y, tiefe + HOF / 2)));
-  // Innenhof-Breite (quer, nahe Rückseite)
   const zc = tiefe + HOF - 3;
   masseGruppe.add(dimLine(new V(-hofW / 2, y, zc), new V(hofW / 2, y, zc)));
   masseGruppe.add(massLabel('Innenhof-Breite ' + hofW + ' m', new V(hofW / 2 + 0.6, y, zc)));
 }
 
 function rebuildGeom() {
-  // ✅ Only reinitialize if floor count changed
   const currentFloorCount = Math.ceil(parseFloat(document.getElementById('traufe').value) / 3.0);
   if (floorPlans.length !== currentFloorCount) {
     initFloorPlans();
   }
-  
+
+  // ✅ Update floor select dynamically
+  const floorSelect = document.getElementById('floor-select');
+  floorSelect.innerHTML = '';
+  for (let i = 0; i < currentFloorCount; i++) {
+    const option = document.createElement('option');
+    option.value = i;
+    option.textContent = i === 0 ? 'Erdgeschoss' : `${i}. Obergeschoss`;
+    floorSelect.appendChild(option);
+  }
+
   buildKontext();
   buildKonfigurator();
   enableShadows(konfiguratorGruppe);
@@ -1263,6 +1148,7 @@ function rebuildGeom() {
   updateSonne();
   drawFloorPlan(parseInt(document.getElementById('floor-select').value));
 }
+
 // ------------------------------------------------------------------
 //  Bedienelemente
 // ------------------------------------------------------------------
@@ -1271,26 +1157,28 @@ function bindGeom(id, key, labelId) {
   el.addEventListener('input', () => { P[key] = parseFloat(el.value); out.textContent = P[key].toFixed(1); rebuildGeom(); });
 }
 bindGeom('breite', 'breite', 'vBreite');
-bindGeom('tiefe',  'tiefe',  'vTiefe');
+bindGeom('tiefe', 'tiefe', 'vTiefe');
 bindGeom('traufe', 'traufe', 'vTraufe');
-  function updateFlaechenSumme() {
-  const wohn = Number(document.getElementById('wohnflaeche').value) || 0;
-  const privat = Number(document.getElementById('privatflaeche').value) || 0;
-  const gemeinschaft = Number(document.getElementById('gemeinschaftsflaeche').value) || 0;
-  const neben = Number(document.getElementById('nebenflaeche').value) || 0;
 
-  const summe = wohn + privat + gemeinschaft + neben;
+function updateFlaechenSumme() {
+  const wohn = Number(document.getElementById('wohnen').value) || 0;
+  const privat = Number(document.getElementById('privat').value) || 0;
+  const gemeinsam = Number(document.getElementById('gemeinsam').value) || 0;
+  const neben = Number(document.getElementById('neben').value) || 0;
+
+  const summe = wohn + privat + gemeinsam + neben;
 
   document.getElementById('gesamtflaeche').textContent =
     summe.toLocaleString('de-DE');
 }
 
-['wohnflaeche', 'privatflaeche', 'gemeinschaftsflaeche', 'nebenflaeche']
+['wohnen', 'privat', 'gemeinsam', 'neben']
   .forEach(id => {
     document.getElementById(id).addEventListener('input', updateFlaechenSumme);
   });
 
 updateFlaechenSumme();
+
 const strEl = document.getElementById('strasse');
 strEl.addEventListener('input', () => { P.strasse = parseFloat(strEl.value); document.getElementById('vStrasse').textContent = P.strasse; rebuildGeom(); });
 
@@ -1301,52 +1189,52 @@ hourEl.addEventListener('input', () => {
   document.getElementById('vHour').textContent = h + ':' + String(m).padStart(2, '0');
   updateSonne();
 });
+
 document.getElementById('season').addEventListener('change', (e) => { P.decl = parseFloat(e.target.value); buildSonnenbahn(); updateSonne(); });
+
 const nordEl = document.getElementById('nord');
 nordEl.addEventListener('input', () => { P.nord = parseFloat(nordEl.value); document.getElementById('vNord').textContent = P.nord; buildSonnenbahn(); updateSonne(); });
+
 document.getElementById('sunpath').addEventListener('change', (e) => { P.sunPath = e.target.checked; buildSonnenbahn(); updateSonne(); });
-  // ✅ New controls event listeners
+
 document.getElementById('material').addEventListener('change', rebuildGeom);
 document.getElementById('raster').addEventListener('change', rebuildGeom);
 document.getElementById('fensteranteil').addEventListener('input', () => {
   document.getElementById('vFenster').textContent = document.getElementById('fensteranteil').value;
   rebuildGeom();
 });
+
 document.getElementById('balkon').addEventListener('change', rebuildGeom);
 document.getElementById('balkonTiefe').addEventListener('input', () => {
   document.getElementById('vBalkonTiefe').textContent = document.getElementById('balkonTiefe').value;
   rebuildGeom();
 });
+
 // ✅ Save input values to current floor
 function saveFloorData() {
   const floorIndex = parseInt(document.getElementById('floor-select').value);
   const floorData = floorPlans[floorIndex];
   if (!floorData) return;
 
-  // Read values from inputs
   const wohnen = parseFloat(document.getElementById('wohnen').value) || 0;
   const privat = parseFloat(document.getElementById('privat').value) || 0;
   const gemeinsam = parseFloat(document.getElementById('gemeinsam').value) || 0;
   const neben = parseFloat(document.getElementById('neben').value) || 0;
   const verkehr = parseFloat(document.getElementById('verkehr').value) || 0;
 
-  // Get limits
   const breite = parseFloat(document.getElementById('breite').value);
   const tiefe = parseFloat(document.getElementById('tiefe').value);
   const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
   const maxVerkehrsFlaeche = breite * tiefe * maxVerkehrAnteil;
 
-  // Enforce limits
   const tatsaechlicheVerkehrsFlaeche = Math.min(verkehr, maxVerkehrsFlaeche);
 
-  // Save to floor data
   floorData.wohnen = wohnen;
   floorData.privat = privat;
   floorData.gemeinsam = gemeinsam;
   floorData.neben = neben;
   floorData.verkehr = tatsaechlicheVerkehrsFlaeche;
 
-  // Update UI
   rebuildGeom();
 }
 
@@ -1360,7 +1248,7 @@ document.getElementById('verkehrAnteil').addEventListener('input', () => {
   rebuildGeom();
 });
 
-// ✅ View switch (moved outside)
+// ✅ View switch
 document.getElementById('view-3d').addEventListener('click', () => {
   document.getElementById('floorplan-panel').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -1372,13 +1260,12 @@ document.getElementById('view-2d').addEventListener('click', () => {
   drawFloorPlan(parseInt(document.getElementById('floor-select').value));
 });
 
-// ✅ Floor selector - updates input fields for selected floor
+// ✅ Floor selector
 document.getElementById('floor-select').addEventListener('change', (e) => {
   const floorIndex = parseInt(e.target.value);
   const floorData = floorPlans[floorIndex];
   if (!floorData) return;
 
-  // Update input fields with floor-specific values
   document.getElementById('wohnen').value = floorData.wohnen;
   document.getElementById('privat').value = floorData.privat;
   document.getElementById('gemeinsam').value = floorData.gemeinsam;
@@ -1387,8 +1274,9 @@ document.getElementById('floor-select').addEventListener('change', (e) => {
 
   drawFloorPlan(floorIndex);
 });
+
 // ------------------------------------------------------------------
-//  Export (Ihr Ergebnis = konfiguratorGruppe)
+//  Export
 // ------------------------------------------------------------------
 function download(filename, text, type) {
   const blob = new Blob([text], { type });
@@ -1396,9 +1284,11 @@ function download(filename, text, type) {
   a.href = URL.createObjectURL(blob); a.download = filename; a.click();
   URL.revokeObjectURL(a.href);
 }
+
 document.getElementById('expObj').addEventListener('click', () => {
   download('konfigurator.obj', new OBJExporter().parse(konfiguratorGruppe), 'text/plain');
 });
+
 document.getElementById('expGltf').addEventListener('click', () => {
   new GLTFExporter().parse(konfiguratorGruppe, (gltf) => {
     download('konfigurator.gltf', JSON.stringify(gltf), 'application/json');
@@ -1414,7 +1304,9 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
   labelRenderer.setSize(innerWidth, innerHeight);
 });
+
 rebuildGeom();
+
 (function animate() {
   requestAnimationFrame(animate);
   controls.update();
