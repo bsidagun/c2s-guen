@@ -568,17 +568,24 @@ function buildKonfigurator() {
     verkehr: new THREE.MeshStandardMaterial({ color: 0x7B8FA3, transparent: true, opacity: 0.6 })
   };
 
+  // ✅ Declare variables outside loop
+  let wohnenFlaeche = 0;
+  let privatFlaeche = 0;
+  let gemeinsamFlaeche = 0;
+  let nebenFlaeche = 0;
+  let verkehrFlaeche = 0;
+
   // ✅ Loop over floors with proper `let k`
   for (let k = 0; k < geschosszahl; k++) {
     const y = k * geschossHoehe + geschossHoehe / 2;
     const floorData = floorPlans[k];
     if (!floorData) continue;
 
-    const wohnenFlaeche = floorData.wohnen;
-    const privatFlaeche = floorData.privat;
-    const gemeinsamFlaeche = floorData.gemeinsam;
-    const nebenFlaeche = floorData.neben;
-    const verkehrFlaeche = floorData.verkehr;
+    wohnenFlaeche = floorData.wohnen;
+    privatFlaeche = floorData.privat;
+    gemeinsamFlaeche = floorData.gemeinsam;
+    nebenFlaeche = floorData.neben;
+    verkehrFlaeche = floorData.verkehr;
 
     const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
     const maxVerkehrsFlaeche = breite * tiefe * maxVerkehrAnteil;
@@ -772,6 +779,30 @@ function buildKonfigurator() {
 
   // ✅ Auswertung
   if (auswertungPanel) {
+    // ✅ Declare warnung before use
+    let warnung = "";
+    const verfuegbareFlaeche = grundflaeche * geschosszahl;
+    const gewuenschteGesamtflaeche = wohnenFlaeche + privatFlaeche + gemeinsamFlaeche + nebenFlaeche + verkehrFlaeche;
+
+    if (gewuenschteGesamtflaeche > verfuegbareFlaeche) {
+      warnung = `Warnung: Gewünschte Fläche (${gewuenschteGesamtflaeche.toFixed(0)} m²) überschreitet verfügbare Fläche (${verfuegbareFlaeche.toFixed(0)} m²) um ${(gewuenschteGesamtflaeche - verfuegbareFlaeche).toFixed(0)} m².`;
+    }
+    const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
+    const maxVerkehrsFlaeche = breite * tiefe * maxVerkehrAnteil;
+    const tatsaechlicheVerkehrsFlaeche = Math.min(verkehrFlaeche, maxVerkehrsFlaeche);
+    const nichtErfuellterBedarf = verkehrFlaeche - tatsaechlicheVerkehrsFlaeche;
+
+    if (nichtErfuellterBedarf > 0) {
+      warnung += ` Warnung: Verkehrsfläche (${verkehrFlaeche.toFixed(0)} m²) überschreitet max. erlaubte Verkehrsfläche (${maxVerkehrsFlaeche.toFixed(0)} m²). Tatsächlich verwendet: ${tatsaechlicheVerkehrsFlaeche.toFixed(0)} m². Nicht erfüllter Bedarf: ${nichtErfuellterBedarf.toFixed(0)} m².`;
+    }
+
+    // ✅ Fix eigenesKriterium usage
+    let ek = null;
+    try { ek = eigenesKriterium({ BRI, BGF, GRF, geschosse, GRZ, GFZ, AV, A,
+                                breite: P.breite, tiefe: P.tiefe, traufe: P.traufe,
+                                gruppe: konfiguratorGruppe }); }
+    catch (e) {}
+
     auswertungPanel.innerHTML = `
       <h3>Ergebnisse</h3>
       <p><strong>Geschosszahl:</strong> ${geschosszahl}</p>
@@ -791,7 +822,7 @@ function buildKonfigurator() {
       <p><strong>Nebenfläche:</strong> ${nebenFlaeche.toFixed(0)} m²</p>
       <p><strong>Verkehrsfläche:</strong> ${verkehrFlaeche.toFixed(0)} m²</p>
       ${warnung ? `<p style="color:red"><strong>${warnung}</strong></p>` : ''}
-      <p><strong>Eigenes Kriterium:</strong> ${eigenesKriterium().ergebnis}</p>
+      <p><strong>Eigenes Kriterium:</strong> ${ek?.label || '(noch zu definieren)'}</p>
     `;
   } else {
     console.error("Element 'auswertung' not found in the DOM.");
