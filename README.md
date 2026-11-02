@@ -81,6 +81,3 @@ https://github.com/bsidagun/c2s-guen/blob/main/index.html
 
 ---
 
-**Projektname:** Carbon to Silicon  
-**Studiengang:** Architektur  
-**Hochschule:** Hochschule Mainz
