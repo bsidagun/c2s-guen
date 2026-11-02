@@ -625,6 +625,14 @@ function buildKonfigurator() {
     );
     neben.position.set(breite * 0.35, y - geschossHoehe / 2 + 0.1, tiefe * 0.7);
     konfiguratorGruppe.add(neben);
+
+    // ✅ Gemeinschaftsbereiche
+    const gemeinsam = new THREE.Mesh(
+      new THREE.BoxGeometry(breite * 0.8 * (gemeinsamFlaeche / totalFlaeche) * 2, 0.05, tiefe * 0.8),
+      zonenMaterial.gemeinsam
+    );
+    gemeinsam.position.set(0, y - geschossHoehe / 2 + 0.1, tiefe / 2);
+    konfiguratorGruppe.add(gemeinsam);
   }
 
   // ✅ Interior partition walls
@@ -1196,14 +1204,15 @@ function updateFlaechenSumme() {
   const privat = Number(document.getElementById('privat').value) || 0;
   const gemeinsam = Number(document.getElementById('gemeinsam').value) || 0;
   const neben = Number(document.getElementById('neben').value) || 0;
+  const verkehr = Number(document.getElementById('verkehr').value) || 0;
 
-  const summe = wohn + privat + gemeinsam + neben;
+  const summe = wohn + privat + gemeinsam + neben + verkehr;
 
   document.getElementById('gesamtflaeche').textContent =
     summe.toLocaleString('de-DE');
 }
 
-['wohnen', 'privat', 'gemeinsam', 'neben']
+['wohnen', 'privat', 'gemeinsam', 'neben', 'verkehr']
   .forEach(id => {
     document.getElementById(id).addEventListener('input', updateFlaechenSumme);
   });
