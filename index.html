@@ -386,9 +386,9 @@ function buildKonfigurator() {
   const rastertyp = document.getElementById('raster').value || 'mittler';
   const rastertiefe = rasterOptionen[rastertyp];
   const materialTyp = document.getElementById('material').value || 'stahlbeton';
-  const fensteranteil = parseFloat(document.getElementById('fensteranteil').value) / 100;
+  const fensteranteil = parseFloat(document.getElementById('fensteranteil').value) / 100 || 0.4;
   const balkonAktiv = document.getElementById('balkon').value === 'true';
-  const balkonTiefe = parseFloat(document.getElementById('balkonTiefe').value);
+  const balkonTiefe = parseFloat(document.getElementById('balkonTiefe').value) || 1.2;
 
   let materialTragwerk;
   switch (materialTyp) {
@@ -522,14 +522,18 @@ function buildKonfigurator() {
   const gemeinsamFlaeche = parseFloat(document.getElementById('gemeinsam')?.value || 0) || grundflaeche * 0.1;
   const nebenFlaeche = parseFloat(document.getElementById('neben')?.value || 0) || grundflaeche * 0.15;
   const verkehrFlaeche = parseFloat(document.getElementById('verkehr')?.value || 0) || grundflaeche * 0.15;
+  const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
 
   // Check if total desired area exceeds available area
   const verfuegbareFlaeche = grundflaeche * geschosszahl;
   const gewuenschteGesamtflaeche = wohnenFlaeche + privatFlaeche + gemeinsamFlaeche + nebenFlaeche + verkehrFlaeche;
 
-  let warnung = "";
+    let warnung = "";
   if (gewuenschteGesamtflaeche > verfuegbareFlaeche) {
     warnung = `Warnung: Gewünschte Fläche (${gewuenschteGesamtflaeche.toFixed(0)} m²) überschreitet verfügbare Fläche (${verfuegbareFlaeche.toFixed(0)} m²) um ${(gewuenschteGesamtflaeche - verfuegbareFlaeche).toFixed(0)} m².`;
+  }
+  if (verkehrFlaeche > verfuegbareFlaeche * maxVerkehrAnteil) {
+    warnung += ` Warnung: Verkehrsfläche (${verkehrFlaeche.toFixed(0)} m²) überschreitet max. erlaubte Verkehrsfläche (${(verfuegbareFlaeche * maxVerkehrAnteil).toFixed(0)} m²).`;
   }
 
   // ✅ Interior functional zones (visible through windows)
@@ -657,9 +661,9 @@ function buildKonfigurator() {
         wallAbove.position.set((x1 + x2) / 2, y + geschossHoehe * 0.4, zPos);
         konfiguratorGruppe.add(wallAbove);
 
-        // Window opening
-        const fensterBreite = laenge * 0.7;
-        const fensterHoehe = geschossHoehe * 0.5;
+        // Window opening - size based on fensteranteil
+        const fensterBreite = laenge * (0.4 + fensteranteil * 0.6);
+        const fensterHoehe = geschossHoehe * (0.3 + fensteranteil * 0.5);
         const fenster = new THREE.Mesh(
           new THREE.BoxGeometry(fensterBreite, fensterHoehe, 0.05),
           fensterMaterial
