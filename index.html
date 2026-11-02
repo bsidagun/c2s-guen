@@ -125,25 +125,25 @@
   </div>
 
   <div class="div">Nutzungsflächen</div>
-  <div class="row">
+   <div class="row">
     <label>Wohnbereiche (m²)</label>
-    <input type="number" id="wohnen" value="80" min="0" step="5" />
+    <input type="number" id="wohnen" value="80" min="0" step="1" />
   </div>
   <div class="row">
     <label>Private Bereiche (m²)</label>
-    <input type="number" id="privat" value="40" min="0" step="5" />
+    <input type="number" id="privat" value="40" min="0" step="1" />
   </div>
   <div class="row">
     <label>Gemeinschaftsbereiche (m²)</label>
-    <input type="number" id="gemeinsam" value="20" min="0" step="5" />
+    <input type="number" id="gemeinsam" value="20" min="0" step="1" />
   </div>
   <div class="row">
     <label>Nebenräume (m²)</label>
-    <input type="number" id="neben" value="30" min="0" step="5" />
+    <input type="number" id="neben" value="30" min="0" step="1" />
   </div>
   <div class="row">
     <label>Verkehrsflächen (m²)</label>
-    <input type="number" id="verkehr" value="30" min="0" step="5" />
+    <input type="number" id="verkehr" value="30" min="0" step="1" />
   </div>
   <div class="row">
     <label>Max. Verkehrsflächenanteil <b><span id="vVerkehrAnteil">20</span> %</b></label>
@@ -914,9 +914,24 @@ function sonne(hour) {
   const H = (hour - 12) * 15 * DEG;                           // Stundenwinkel
   const sinElev = Math.sin(phi) * Math.sin(decl) + Math.cos(phi) * Math.cos(decl) * Math.cos(H);
   const elev = Math.asin(Math.max(-1, Math.min(1, sinElev)));
-  const azS = Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(decl) * Math.cos(phi));
-  const A = Math.PI + azS + P.nord * DEG;                     // Azimut inkl. Nordrichtung
-  const dir = new THREE.Vector3(Math.cos(elev) * Math.sin(A), Math.sin(elev), -Math.cos(elev) * Math.cos(A));
+  
+  // ✅ FIXED: Correct azimuth calculation
+  // At solar noon (H=0), azimuth should be 180° (south) in the northern hemisphere
+  const cosAz = (Math.sin(decl) - Math.sin(phi) * Math.sin(elev)) / (Math.cos(phi) * Math.cos(elev));
+  const azS = Math.acos(Math.max(-1, Math.min(1, cosAz)));
+  
+  // Determine east/west
+  const az = H > 0 ? azS : (2 * Math.PI - azS);
+  
+  // Apply north rotation
+  const A = az + P.nord * DEG;
+  
+  // Convert to direction vector
+  const dir = new THREE.Vector3(
+    Math.cos(elev) * Math.sin(A),
+    Math.sin(elev),
+    -Math.cos(elev) * Math.cos(A)
+  );
   return { dir, elev };
 }
 
@@ -1135,6 +1150,40 @@ function drawFloorPlan(floorIndex) {
   ctx.fillStyle = '#333';
   ctx.font = '10px Arial';
   ctx.fillText(`Maßstab: 1m = ${scale.toFixed(1)}px`, 10, canvas.height - 10);
+
+  // ✅ Draw north arrow
+  const northAngle = parseFloat(document.getElementById('nord').value) * Math.PI / 180;
+  const arrowX = canvas.width - 30;
+  const arrowY = 30;
+  const arrowLen = 15;
+  
+  ctx.save();
+  ctx.translate(arrowX, arrowY);
+  ctx.rotate(-northAngle);
+  
+  // Arrow line
+  ctx.strokeStyle = '#ff0000';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, arrowLen / 2);
+  ctx.lineTo(0, -arrowLen / 2);
+  ctx.stroke();
+  
+  // Arrow head
+  ctx.fillStyle = '#ff0000';
+  ctx.beginPath();
+  ctx.moveTo(0, -arrowLen / 2);
+  ctx.lineTo(-4, -arrowLen / 2 + 6);
+  ctx.lineTo(4, -arrowLen / 2 + 6);
+  ctx.closePath();
+  ctx.fill();
+  
+  // "N" label
+  ctx.fillStyle = '#ff0000';
+  ctx.font = 'bold 10px Arial';
+  ctx.fillText('N', -3, -arrowLen / 2 - 4);
+  
+  ctx.restore();
 }
 
 function buildMasse() {
