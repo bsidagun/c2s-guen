@@ -615,14 +615,14 @@ function buildKonfigurator() {
     }
   }
 
-  // ✅ Party walls (closed)
-  const wandTiefe = new THREE.BoxGeometry(0.1, hoehe, tiefe);
+  // ✅ Party walls (closed) - 0.3m thick
+  const wandTiefe = new THREE.BoxGeometry(0.3, hoehe, tiefe);
   const wand3 = new THREE.Mesh(wandTiefe, wandMaterial);
-  wand3.position.set(-breite / 2, hoehe / 2, tiefe / 2);
+  wand3.position.set(-breite / 2 - 0.15, hoehe / 2, tiefe / 2);
   konfiguratorGruppe.add(wand3);
 
   const wand4 = new THREE.Mesh(wandTiefe, wandMaterial);
-  wand4.position.set(breite / 2, hoehe / 2, tiefe / 2);
+  wand4.position.set(breite / 2 + 0.15, hoehe / 2, tiefe / 2);
   konfiguratorGruppe.add(wand4);
 
   // ✅ Balconies on street facade (Z = 0) with railings
