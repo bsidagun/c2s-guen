@@ -451,6 +451,23 @@ function buildKonfigurator() {
     konfiguratorGruppe.add(decke);
   }
 
+  // ✅ Parametric zoning based on available floor area
+  // Read user inputs for desired areas (with defaults)
+  const wohnenFlaeche = parseFloat(document.getElementById('wohnen')?.value || 0) || grundflaeche * 0.4;
+  const privatFlaeche = parseFloat(document.getElementById('privat')?.value || 0) || grundflaeche * 0.2;
+  const gemeinsamFlaeche = parseFloat(document.getElementById('gemeinsam')?.value || 0) || grundflaeche * 0.1;
+  const nebenFlaeche = parseFloat(document.getElementById('neben')?.value || 0) || grundflaeche * 0.15;
+  const verkehrFlaeche = parseFloat(document.getElementById('verkehr')?.value || 0) || grundflaeche * 0.15;
+
+  // Check if total desired area exceeds available area
+  const verfuegbareFlaeche = grundflaeche * geschosszahl;
+  const gewuenschteGesamtflaeche = wohnenFlaeche + privatFlaeche + gemeinsamFlaeche + nebenFlaeche + verkehrFlaeche;
+
+  let warnung = "";
+  if (gewuenschteGesamtflaeche > verfuegbareFlaeche) {
+    warnung = `Warnung: Gewünschte Fläche (${gewuenschteGesamtflaeche.toFixed(0)} m²) überschreitet verfügbare Fläche (${verfuegbareFlaeche.toFixed(0)} m²) um ${(gewuenschteGesamtflaeche - verfuegbareFlaeche).toFixed(0)} m².`;
+  }
+
   // ✅ Interior functional zones (visible through windows)
   const zonenMaterial = {
     wohnen: new THREE.MeshStandardMaterial({ color: 0xF5DEB3, transparent: true, opacity: 0.6 }),
@@ -472,30 +489,39 @@ function buildKonfigurator() {
       zone.position.set(0, y - geschossHoehe / 2 + 0.1, tiefe / 2);
       konfiguratorGruppe.add(zone);
     } else {
-      // Upper floors: residential zones
+      // Upper floors: residential zones based on parametric distribution
+      const wohnenAnteil = wohnenFlaeche / (verfuegbareFlaeche - grundflaeche);
+      const privatAnteil = privatFlaeche / (verfuegbareFlaeche - grundflaeche);
+      const verkehrAnteil = verkehrFlaeche / (verfuegbareFlaeche - grundflaeche);
+      const nebenAnteil = nebenFlaeche / (verfuegbareFlaeche - grundflaeche);
+
+      // Living zone (front, well-lit)
       const wohnen = new THREE.Mesh(
-        new THREE.BoxGeometry(breite * 0.5, 0.05, tiefe * 0.4),
+        new THREE.BoxGeometry(breite * 0.5 * wohnenAnteil * 2, 0.05, tiefe * 0.4),
         zonenMaterial.wohnen
       );
       wohnen.position.set(-breite * 0.15, y - geschossHoehe / 2 + 0.1, tiefe * 0.3);
       konfiguratorGruppe.add(wohnen);
 
+      // Private zone (back)
       const privat = new THREE.Mesh(
-        new THREE.BoxGeometry(breite * 0.4, 0.05, tiefe * 0.3),
+        new THREE.BoxGeometry(breite * 0.4 * privatAnteil * 2, 0.05, tiefe * 0.3),
         zonenMaterial.privat
       );
       privat.position.set(breite * 0.15, y - geschossHoehe / 2 + 0.1, tiefe * 0.7);
       konfiguratorGruppe.add(privat);
 
+      // Circulation zone (side)
       const verkehr = new THREE.Mesh(
-        new THREE.BoxGeometry(breite * 0.2, 0.05, tiefe * 0.8),
+        new THREE.BoxGeometry(breite * 0.2 * verkehrAnteil * 2, 0.05, tiefe * 0.8),
         zonenMaterial.verkehr
       );
       verkehr.position.set(-breite * 0.35, y - geschossHoehe / 2 + 0.1, tiefe / 2);
       konfiguratorGruppe.add(verkehr);
 
+      // Ancillary zone
       const neben = new THREE.Mesh(
-        new THREE.BoxGeometry(breite * 0.2, 0.05, tiefe * 0.3),
+        new THREE.BoxGeometry(breite * 0.2 * nebenAnteil * 2, 0.05, tiefe * 0.3),
         zonenMaterial.neben
       );
       neben.position.set(breite * 0.35, y - geschossHoehe / 2 + 0.1, tiefe * 0.7);
@@ -678,6 +704,12 @@ function buildKonfigurator() {
       <p><strong>Kosten:</strong> ca. ${geschätzteKosten.toFixed(0)} € (geschätzt)</p>
       <p><strong>Tragwerksraster:</strong> ${rastertyp} (${rastertiefe} m)</p>
       <p><strong>Material:</strong> ${materialTyp}</p>
+      <p><strong>Wohnfläche:</strong> ${wohnenFlaeche.toFixed(0)} m²</p>
+      <p><strong>Private Fläche:</strong> ${privatFlaeche.toFixed(0)} m²</p>
+      <p><strong>Gemeinschaftsfläche:</strong> ${gemeinsamFlaeche.toFixed(0)} m²</p>
+      <p><strong>Nebenfläche:</strong> ${nebenFlaeche.toFixed(0)} m²</p>
+      <p><strong>Verkehrsfläche:</strong> ${verkehrFlaeche.toFixed(0)} m²</p>
+      ${warnung ? `<p style="color:red"><strong>${warnung}</strong></p>` : ''}
       <p><strong>Eigenes Kriterium:</strong> ${eigenesKriterium().ergebnis}</p>
     `;
   } else {
