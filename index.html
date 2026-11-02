@@ -329,27 +329,13 @@ let floorPlans = [];
 function initFloorPlans() {
   const geschosszahl = Math.ceil(parseFloat(document.getElementById('traufe').value) / 3.0);
   
-  // If floorPlans already has data, preserve it
-  if (floorPlans.length > 0) {
-    // Add new floors if needed
-    while (floorPlans.length < geschosszahl) {
-      const i = floorPlans.length;
-      floorPlans.push({
-        floor: i,
-        wohnen: i === 0 ? 0 : 80,
-        privat: i === 0 ? 0 : 40,
-        gemeinsam: i === 0 ? 80 : 20,
-        neben: i === 0 ? 30 : 30,
-        verkehr: i === 0 ? 30 : 30,
-        zones: []
-      });
-    }
-    // Remove extra floors if needed
-    while (floorPlans.length > geschosszahl) {
-      floorPlans.pop();
-    }
-  } else {
-    // First time initialization
+  // Preserve existing data only if floor count matches
+  if (floorPlans.length === geschosszahl) {
+    return; // Zaten doğru sayıda kat var
+  }
+
+  // If floorPlans is empty, initialize from scratch
+  if (floorPlans.length === 0) {
     for (let i = 0; i < geschosszahl; i++) {
       floorPlans.push({
         floor: i,
@@ -361,6 +347,25 @@ function initFloorPlans() {
         zones: []
       });
     }
+    return;
+  }
+
+  // Adjust floor count: add or remove floors
+  while (floorPlans.length < geschosszahl) {
+    const i = floorPlans.length;
+    floorPlans.push({
+      floor: i,
+      wohnen: i === 0 ? 0 : 80,
+      privat: i === 0 ? 0 : 40,
+      gemeinsam: i === 0 ? 80 : 20,
+      neben: i === 0 ? 30 : 30,
+      verkehr: i === 0 ? 30 : 30,
+      zones: []
+    });
+  }
+
+  while (floorPlans.length > geschosszahl) {
+    floorPlans.pop();
   }
 }
 initFloorPlans();
@@ -1126,30 +1131,34 @@ function drawFloorPlan(floorIndex) {
   ctx.lineTo(offsetX + breite * scale, offsetY + tiefe * scale);
   ctx.stroke();
 
-   // Draw zones - using floor-specific data
-  const floorData = floorPlans[floorIndex] || floorPlans[0];
+  // Get floor data
+  const floorData = floorPlans[k];
+  if (!floorData) return;
+
   const wohnenFlaeche = floorData.wohnen;
   const privatFlaeche = floorData.privat;
   const gemeinsamFlaeche = floorData.gemeinsam;
   const nebenFlaeche = floorData.neben;
   const verkehrFlaeche = floorData.verkehr;
 
-  // ✅ ENFORCE: Limit traffic area
+  // ✅ Limit traffic area
   const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
   const maxVerkehrsFlaeche = breite * tiefe * maxVerkehrAnteil;
   const tatsaechlicheVerkehrsFlaeche = Math.min(verkehrFlaeche, maxVerkehrsFlaeche);
 
+  // Total area for scaling
   const totalFlaeche = wohnenFlaeche + privatFlaeche + gemeinsamFlaeche + nebenFlaeche + tatsaechlicheVerkehrsFlaeche;
-  const scaleFactor = Math.min(1, (breite * tiefe) / totalFlaeche);
 
+  // Define zones with real m²-based positioning
   const zones = [
-    { name: 'Wohnen', color: '#F5DEB3', x: 0.05, y: 0.05, w: Math.min(0.5, (wohnenFlaeche * scaleFactor) / breite), h: 0.4 },
-    { name: 'Privat', color: '#E2725B', x: 0.05, y: 0.55, w: Math.min(0.4, (privatFlaeche * scaleFactor) / breite), h: 0.3 },
-    { name: 'Gemeinschaft', color: '#8FBC8F', x: 0.55, y: 0.05, w: Math.min(0.3, (gemeinsamFlaeche * scaleFactor) / breite), h: 0.3 },
-    { name: 'Neben', color: '#A9A9A9', x: 0.55, y: 0.55, w: Math.min(0.3, (nebenFlaeche * scaleFactor) / breite), h: 0.3 },
-    { name: 'Verkehr', color: '#7B8FA3', x: 0.05, y: 0.05, w: Math.min(0.15, (tatsaechlicheVerkehrsFlaeche * scaleFactor) / breite), h: 0.8 }
+    { name: 'Wohnen', color: '#F5DEB3', x: 0.05, y: 0.05, w: wohnenFlaeche / totalFlaeche * 0.5, h: 0.4 },
+    { name: 'Privat', color: '#E2725B', x: 0.05, y: 0.55, w: privatFlaeche / totalFlaeche * 0.4, h: 0.3 },
+    { name: 'Gemeinschaft', color: '#8FBC8F', x: 0.55, y: 0.05, w: gemeinsamFlaeche / totalFlaeche * 0.3, h: 0.3 },
+    { name: 'Neben', color: '#A9A9A9', x: 0.55, y: 0.55, w: nebenFlaeche / totalFlaeche * 0.3, h: 0.3 },
+    { name: 'Verkehr', color: '#7B8FA3', x: 0.05, y: 0.05, w: tatsaechlicheVerkehrsFlaeche / totalFlaeche * 0.15, h: 0.8 }
   ];
-    zones.forEach(zone => {
+
+  zones.forEach(zone => {
     const x = offsetX + zone.x * breite * scale;
     const y = offsetY + zone.y * tiefe * scale;
     const w = zone.w * breite * scale;
@@ -1165,13 +1174,14 @@ function drawFloorPlan(floorIndex) {
     ctx.lineWidth = 1;
     ctx.strokeRect(x, y, clampedW, clampedH);
 
-    // Zone label (shortened if too small)
+    // Label with real m²
     ctx.fillStyle = '#333';
     ctx.font = '9px Arial';
     const label = zone.name.length > 8 ? zone.name.substring(0, 6) + '...' : zone.name;
     ctx.fillText(label, x + 2, y + 10);
-    ctx.fillText(`${(zone.w * zone.h * breite * tiefe).toFixed(0)} m²`, x + 2, y + 20);
+    ctx.fillText(`${Math.round(zone.w * zone.h * breite * tiefe)} m²`, x + 2, y + 20);
   });
+
   // Draw stair core
   ctx.fillStyle = '#999';
   ctx.fillRect(offsetX + 0.1 * breite * scale, offsetY + 0.1 * tiefe * scale, 0.15 * breite * scale, 0.2 * tiefe * scale);
@@ -1186,25 +1196,24 @@ function drawFloorPlan(floorIndex) {
   ctx.font = '10px Arial';
   ctx.fillText(`Maßstab: 1m = ${scale.toFixed(1)}px`, 10, canvas.height - 10);
 
-   // ✅ Draw north arrow
-  const northAngle = parseFloat(document.getElementById('nord').value) * Math.PI / 180;
+  // ✅ Draw north arrow
+  const nord = parseFloat(document.getElementById('nord').value);
+  const northAngle = nord * Math.PI / 180;
   const arrowX = canvas.width - 30;
   const arrowY = 30;
   const arrowLen = 15;
-  
+
   ctx.save();
   ctx.translate(arrowX, arrowY);
   ctx.rotate(-northAngle);
-  
-  // Arrow line
+
   ctx.strokeStyle = '#ff0000';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(0, arrowLen / 2);
   ctx.lineTo(0, -arrowLen / 2);
   ctx.stroke();
-  
-  // Arrow head
+
   ctx.fillStyle = '#ff0000';
   ctx.beginPath();
   ctx.moveTo(0, -arrowLen / 2);
@@ -1212,12 +1221,11 @@ function drawFloorPlan(floorIndex) {
   ctx.lineTo(4, -arrowLen / 2 + 6);
   ctx.closePath();
   ctx.fill();
-  
-  // "N" label
+
   ctx.fillStyle = '#ff0000';
   ctx.font = 'bold 10px Arial';
   ctx.fillText('N', -3, -arrowLen / 2 - 4);
-  
+
   ctx.restore();
 }
 
@@ -1312,20 +1320,33 @@ document.getElementById('balkonTiefe').addEventListener('input', () => {
 // ✅ Save input values to current floor
 function saveFloorData() {
   const floorIndex = parseInt(document.getElementById('floor-select').value);
-  if (floorPlans[floorIndex]) {
-    floorPlans[floorIndex].wohnen = parseFloat(document.getElementById('wohnen').value) || 0;
-    floorPlans[floorIndex].privat = parseFloat(document.getElementById('privat').value) || 0;
-    floorPlans[floorIndex].gemeinsam = parseFloat(document.getElementById('gemeinsam').value) || 0;
-    floorPlans[floorIndex].neben = parseFloat(document.getElementById('neben').value) || 0;
-    
-    // ✅ ENFORCE: Limit traffic area
-    const breite = parseFloat(document.getElementById('breite').value);
-    const tiefe = parseFloat(document.getElementById('tiefe').value);
-    const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
-    const maxVerkehrsFlaeche = breite * tiefe * maxVerkehrAnteil;
-    const gewuenschteVerkehr = parseFloat(document.getElementById('verkehr').value) || 0;
-    floorPlans[floorIndex].verkehr = Math.min(gewuenschteVerkehr, maxVerkehrsFlaeche);
-  }
+  const floorData = floorPlans[floorIndex];
+  if (!floorData) return;
+
+  // Read values from inputs
+  const wohnen = parseFloat(document.getElementById('wohnen').value) || 0;
+  const privat = parseFloat(document.getElementById('privat').value) || 0;
+  const gemeinsam = parseFloat(document.getElementById('gemeinsam').value) || 0;
+  const neben = parseFloat(document.getElementById('neben').value) || 0;
+  const verkehr = parseFloat(document.getElementById('verkehr').value) || 0;
+
+  // Get limits
+  const breite = parseFloat(document.getElementById('breite').value);
+  const tiefe = parseFloat(document.getElementById('tiefe').value);
+  const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
+  const maxVerkehrsFlaeche = breite * tiefe * maxVerkehrAnteil;
+
+  // Enforce limits
+  const tatsaechlicheVerkehrsFlaeche = Math.min(verkehr, maxVerkehrsFlaeche);
+
+  // Save to floor data
+  floorData.wohnen = wohnen;
+  floorData.privat = privat;
+  floorData.gemeinsam = gemeinsam;
+  floorData.neben = neben;
+  floorData.verkehr = tatsaechlicheVerkehrsFlaeche;
+
+  // Update UI
   rebuildGeom();
 }
 
@@ -1354,15 +1375,16 @@ document.getElementById('view-2d').addEventListener('click', () => {
 // ✅ Floor selector - updates input fields for selected floor
 document.getElementById('floor-select').addEventListener('change', (e) => {
   const floorIndex = parseInt(e.target.value);
-  const floorData = floorPlans[floorIndex] || floorPlans[0];
-  
+  const floorData = floorPlans[floorIndex];
+  if (!floorData) return;
+
   // Update input fields with floor-specific values
   document.getElementById('wohnen').value = floorData.wohnen;
   document.getElementById('privat').value = floorData.privat;
   document.getElementById('gemeinsam').value = floorData.gemeinsam;
   document.getElementById('neben').value = floorData.neben;
   document.getElementById('verkehr').value = floorData.verkehr;
-  
+
   drawFloorPlan(floorIndex);
 });
 // ------------------------------------------------------------------
