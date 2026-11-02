@@ -125,7 +125,7 @@
   </div>
 
   <div class="div">Nutzungsflächen</div>
-    <div class="row">
+  <div class="row">
     <label>Wohnbereiche (m²)</label>
     <input type="number" id="wohnen" value="80" min="0" step="1" />
   </div>
@@ -945,39 +945,28 @@ function eigenesKriterium(ctx = {}) {
 // ------------------------------------------------------------------
 
 function sonne(hour) {
-  const phi = LAT * DEG;
-  const decl = P.decl * DEG;
-
-  const H = (hour - 12) * 15 * DEG;
-
-  const sinElev =
-    Math.sin(phi) * Math.sin(decl) +
-    Math.cos(phi) * Math.cos(decl) * Math.cos(H);
-
-  const elev = Math.asin(
-    Math.max(-1, Math.min(1, sinElev))
-  );
-
-  const azS = Math.atan2(
-    Math.sin(H),
-    Math.cos(H) * Math.sin(phi) -
-    Math.tan(decl) * Math.cos(phi)
-  );
-
-  // Nordrichtung berücksichtigen
-  const A = Math.PI + azS + P.nord * DEG;
-
-  // Koordinatensystem:
-  // +X = Osten
-  // -X = Westen
-  // +Z = Norden
-  // -Z = Süden
+  const phi = LAT * DEG, decl = P.decl * DEG;
+  const H = (hour - 12) * 15 * DEG;                           // Stundenwinkel
+  const sinElev = Math.sin(phi) * Math.sin(decl) + Math.cos(phi) * Math.cos(decl) * Math.cos(H);
+  const elev = Math.asin(Math.max(-1, Math.min(1, sinElev)));
+  
+  // ✅ FIXED: Correct azimuth calculation
+  // At solar noon (H=0), azimuth should be 180° (south) in the northern hemisphere
+  const cosAz = (Math.sin(decl) - Math.sin(phi) * Math.sin(elev)) / (Math.cos(phi) * Math.cos(elev));
+  const azS = Math.acos(Math.max(-1, Math.min(1, cosAz)));
+  
+  // Determine east/west
+  const az = H > 0 ? azS : (2 * Math.PI - azS);
+  
+  // Apply north rotation
+  const A = az + P.nord * DEG;
+  
+  // Convert to direction vector
   const dir = new THREE.Vector3(
     Math.cos(elev) * Math.sin(A),
     Math.sin(elev),
-    Math.cos(elev) * Math.cos(A)
+    -Math.cos(elev) * Math.cos(A)
   );
-
   return { dir, elev };
 }
 
@@ -1197,7 +1186,7 @@ function drawFloorPlan(floorIndex) {
   ctx.font = '10px Arial';
   ctx.fillText(`Maßstab: 1m = ${scale.toFixed(1)}px`, 10, canvas.height - 10);
 
-  // ✅ Draw north arrow
+   // ✅ Draw north arrow
   const northAngle = parseFloat(document.getElementById('nord').value) * Math.PI / 180;
   const arrowX = canvas.width - 30;
   const arrowY = 30;
