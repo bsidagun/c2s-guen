@@ -1131,8 +1131,8 @@ function drawFloorPlan(floorIndex) {
   ctx.lineTo(offsetX + breite * scale, offsetY + tiefe * scale);
   ctx.stroke();
 
-  // Get floor data
-  const floorData = floorPlans[k];
+  // ✅ Get floor data using floorIndex (NOT k!)
+  const floorData = floorPlans[floorIndex];
   if (!floorData) return;
 
   const wohnenFlaeche = floorData.wohnen;
