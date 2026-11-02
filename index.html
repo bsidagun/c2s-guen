@@ -294,17 +294,39 @@ const P = { breite: 10, tiefe: 20, traufe: 15, strasse: 10, hour: 12, decl: 0, n
 let floorPlans = [];
 function initFloorPlans() {
   const geschosszahl = Math.ceil(parseFloat(document.getElementById('traufe').value) / 3.0);
-  floorPlans = [];
-  for (let i = 0; i < geschosszahl; i++) {
-    floorPlans.push({
-      floor: i,
-      wohnen: i === 0 ? 0 : 80,
-      privat: i === 0 ? 0 : 40,
-      gemeinsam: i === 0 ? 80 : 20,
-      neben: i === 0 ? 30 : 30,
-      verkehr: i === 0 ? 30 : 30,
-      zones: []
-    });
+  
+  // If floorPlans already has data, preserve it
+  if (floorPlans.length > 0) {
+    // Add new floors if needed
+    while (floorPlans.length < geschosszahl) {
+      const i = floorPlans.length;
+      floorPlans.push({
+        floor: i,
+        wohnen: i === 0 ? 0 : 80,
+        privat: i === 0 ? 0 : 40,
+        gemeinsam: i === 0 ? 80 : 20,
+        neben: i === 0 ? 30 : 30,
+        verkehr: i === 0 ? 30 : 30,
+        zones: []
+      });
+    }
+    // Remove extra floors if needed
+    while (floorPlans.length > geschosszahl) {
+      floorPlans.pop();
+    }
+  } else {
+    // First time initialization
+    for (let i = 0; i < geschosszahl; i++) {
+      floorPlans.push({
+        floor: i,
+        wohnen: i === 0 ? 0 : 80,
+        privat: i === 0 ? 0 : 40,
+        gemeinsam: i === 0 ? 80 : 20,
+        neben: i === 0 ? 30 : 30,
+        verkehr: i === 0 ? 30 : 30,
+        zones: []
+      });
+    }
   }
 }
 initFloorPlans();
@@ -1134,7 +1156,12 @@ function buildMasse() {
 }
 
 function rebuildGeom() {
-  initFloorPlans();
+  // ✅ Only reinitialize if floor count changed
+  const currentFloorCount = Math.ceil(parseFloat(document.getElementById('traufe').value) / 3.0);
+  if (floorPlans.length !== currentFloorCount) {
+    initFloorPlans();
+  }
+  
   buildKontext();
   buildKonfigurator();
   enableShadows(konfiguratorGruppe);
