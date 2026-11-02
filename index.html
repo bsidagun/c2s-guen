@@ -552,26 +552,30 @@ function buildKonfigurator() {
     konfiguratorGruppe.add(decke);
   }
 
-  // ✅ Parametric zoning based on floor-specific data
+  // ✅ Parametric zoning based on available floor area
+  // Read user inputs for desired areas (with defaults)
+  const wohnenFlaeche = parseFloat(document.getElementById('wohnen')?.value || 0) || grundflaeche * 0.4;
+  const privatFlaeche = parseFloat(document.getElementById('privat')?.value || 0) || grundflaeche * 0.2;
+  const gemeinsamFlaeche = parseFloat(document.getElementById('gemeinsam')?.value || 0) || grundflaeche * 0.1;
+  const nebenFlaeche = parseFloat(document.getElementById('neben')?.value || 0) || grundflaeche * 0.15;
+  const verkehrFlaeche = parseFloat(document.getElementById('verkehr')?.value || 0) || grundflaeche * 0.15;
   const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
-  
-  // Use floor-specific data for each floor
-  const wohnenFlaeche = floorPlans[0]?.wohnen || grundflaeche * 0.4;
-  const privatFlaeche = floorPlans[0]?.privat || grundflaeche * 0.2;
-  const gemeinsamFlaeche = floorPlans[0]?.gemeinsam || grundflaeche * 0.1;
-  const nebenFlaeche = floorPlans[0]?.neben || grundflaeche * 0.15;
-  const verkehrFlaeche = floorPlans[0]?.verkehr || grundflaeche * 0.15;
 
   // Check if total desired area exceeds available area
   const verfuegbareFlaeche = grundflaeche * geschosszahl;
   const gewuenschteGesamtflaeche = wohnenFlaeche + privatFlaeche + gemeinsamFlaeche + nebenFlaeche + verkehrFlaeche;
 
-    let warnung = "";
+  // ✅ ENFORCE: Limit traffic area per floor
+  const maxVerkehrsFlaeche = grundflaeche * maxVerkehrAnteil;
+  const tatsaechlicheVerkehrsFlaeche = Math.min(verkehrFlaeche, maxVerkehrsFlaeche);
+  const nichtErfuellterBedarf = verkehrFlaeche - tatsaechlicheVerkehrsFlaeche;
+
+  let warnung = "";
   if (gewuenschteGesamtflaeche > verfuegbareFlaeche) {
     warnung = `Warnung: Gewünschte Fläche (${gewuenschteGesamtflaeche.toFixed(0)} m²) überschreitet verfügbare Fläche (${verfuegbareFlaeche.toFixed(0)} m²) um ${(gewuenschteGesamtflaeche - verfuegbareFlaeche).toFixed(0)} m².`;
   }
-  if (verkehrFlaeche > verfuegbareFlaeche * maxVerkehrAnteil) {
-    warnung += ` Warnung: Verkehrsfläche (${verkehrFlaeche.toFixed(0)} m²) überschreitet max. erlaubte Verkehrsfläche (${(verfuegbareFlaeche * maxVerkehrAnteil).toFixed(0)} m²).`;
+  if (nichtErfuellterBedarf > 0) {
+    warnung += ` Warnung: Verkehrsfläche (${verkehrFlaeche.toFixed(0)} m²) überschreitet max. erlaubte Verkehrsfläche (${maxVerkehrsFlaeche.toFixed(0)} m²). Tatsächlich verwendet: ${tatsaechlicheVerkehrsFlaeche.toFixed(0)} m². Nicht erfüllter Bedarf: ${nichtErfuellterBedarf.toFixed(0)} m².`;
   }
 
   // ✅ Interior functional zones (visible through windows)
@@ -623,9 +627,9 @@ function buildKonfigurator() {
       privat.position.set(breite * 0.15, y - geschossHoehe / 2 + 0.1, tiefe * 0.7);
       konfiguratorGruppe.add(privat);
 
-      // Circulation zone (side)
+      // Circulation zone (side) - using limited traffic area
       const verkehr = new THREE.Mesh(
-        new THREE.BoxGeometry(breite * 0.2 * verkehrAnteil * 2, 0.05, tiefe * 0.8),
+        new THREE.BoxGeometry(breite * 0.2 * (tatsaechlicheVerkehrsFlaeche / verkehrFlaeche) * 2, 0.05, tiefe * 0.8),
         zonenMaterial.verkehr
       );
       verkehr.position.set(-breite * 0.35, y - geschossHoehe / 2 + 0.1, tiefe / 2);
@@ -1058,7 +1062,12 @@ function drawFloorPlan(floorIndex) {
   const nebenFlaeche = floorData.neben;
   const verkehrFlaeche = floorData.verkehr;
 
-  const totalFlaeche = wohnenFlaeche + privatFlaeche + gemeinsamFlaeche + nebenFlaeche + verkehrFlaeche;
+  // ✅ ENFORCE: Limit traffic area
+  const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
+  const maxVerkehrsFlaeche = breite * tiefe * maxVerkehrAnteil;
+  const tatsaechlicheVerkehrsFlaeche = Math.min(verkehrFlaeche, maxVerkehrsFlaeche);
+
+  const totalFlaeche = wohnenFlaeche + privatFlaeche + gemeinsamFlaeche + nebenFlaeche + tatsaechlicheVerkehrsFlaeche;
   const scaleFactor = Math.min(1, (breite * tiefe) / totalFlaeche);
 
   const zones = [
@@ -1066,7 +1075,7 @@ function drawFloorPlan(floorIndex) {
     { name: 'Privat', color: '#E2725B', x: 0.05, y: 0.55, w: Math.min(0.4, (privatFlaeche * scaleFactor) / breite), h: 0.3 },
     { name: 'Gemeinschaft', color: '#8FBC8F', x: 0.55, y: 0.05, w: Math.min(0.3, (gemeinsamFlaeche * scaleFactor) / breite), h: 0.3 },
     { name: 'Neben', color: '#A9A9A9', x: 0.55, y: 0.55, w: Math.min(0.3, (nebenFlaeche * scaleFactor) / breite), h: 0.3 },
-    { name: 'Verkehr', color: '#7B8FA3', x: 0.05, y: 0.05, w: Math.min(0.15, (verkehrFlaeche * scaleFactor) / breite), h: 0.8 }
+    { name: 'Verkehr', color: '#7B8FA3', x: 0.05, y: 0.05, w: Math.min(0.15, (tatsaechlicheVerkehrsFlaeche * scaleFactor) / breite), h: 0.8 }
   ];
     zones.forEach(zone => {
     const x = offsetX + zone.x * breite * scale;
@@ -1179,7 +1188,14 @@ function saveFloorData() {
     floorPlans[floorIndex].privat = parseFloat(document.getElementById('privat').value) || 0;
     floorPlans[floorIndex].gemeinsam = parseFloat(document.getElementById('gemeinsam').value) || 0;
     floorPlans[floorIndex].neben = parseFloat(document.getElementById('neben').value) || 0;
-    floorPlans[floorIndex].verkehr = parseFloat(document.getElementById('verkehr').value) || 0;
+    
+    // ✅ ENFORCE: Limit traffic area
+    const breite = parseFloat(document.getElementById('breite').value);
+    const tiefe = parseFloat(document.getElementById('tiefe').value);
+    const maxVerkehrAnteil = parseFloat(document.getElementById('verkehrAnteil').value) / 100 || 0.2;
+    const maxVerkehrsFlaeche = breite * tiefe * maxVerkehrAnteil;
+    const gewuenschteVerkehr = parseFloat(document.getElementById('verkehr').value) || 0;
+    floorPlans[floorIndex].verkehr = Math.min(gewuenschteVerkehr, maxVerkehrsFlaeche);
   }
   rebuildGeom();
 }
